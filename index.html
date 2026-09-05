@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IA ou pas IA ?</title>
+<style>
+  :root{
+    --fond:#0a0b0e; --fond2:#13151b; --trait:#262a33;
+    --texte:#f2f3f5; --doux:#98a0ad;
+    --ia:#e250f5; --ia-sombre:#3d1147;
+    --reel:#22c55e; --reel-sombre:#0d3d22;
+    --rate:#f97316;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--fond);color:var(--texte);overflow:hidden;
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  [hidden]{display:none!important}
+  kbd{display:inline-block;background:#232833;border:1px solid #3a4150;
+    border-bottom-width:2px;border-radius:5px;padding:1px 7px;
+    font-family:inherit;font-size:.85em;font-weight:700;color:#dfe3e9}
+
+  #app{height:100vh;display:flex;flex-direction:column}
+
+  /* ---------- barre ---------- */
+  #barre{flex:0 0 auto;height:54px;display:flex;align-items:center;gap:18px;
+    padding:0 24px;border-bottom:1px solid var(--trait);background:var(--fond2)}
+  .marque{font-weight:800;font-size:15px;letter-spacing:.4px;white-space:nowrap}
+  .marque span{color:var(--ia)}
+  #mode-tag{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--doux);border:1px solid var(--trait);border-radius:20px;padding:3px 11px;
+    white-space:nowrap;cursor:pointer}
+  #theme{font-size:22px;font-weight:800;letter-spacing:-.3px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #compte{margin-left:auto;display:flex;align-items:center;gap:16px;white-space:nowrap}
+  #score{font-size:15px;font-weight:700;color:var(--doux);font-variant-numeric:tabular-nums}
+  #score b{color:var(--reel);font-size:19px}
+  #pos{font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:var(--doux)}
+  #pos b{color:var(--texte);font-size:21px}
+  #jauge{position:fixed;left:0;top:54px;height:3px;background:var(--ia);
+    transition:width .25s ease;z-index:5}
+
+  /* ---------- scène ---------- */
+  #scene{flex:1 1 auto;display:flex;gap:16px;padding:16px 20px;min-height:0}
+  .cote{flex:1 1 50%;display:flex;flex-direction:column;align-items:center;
+    gap:8px;min-width:0;min-height:0}
+  #scene.solo .cote{flex:1 1 100%}
+  .lettre{flex:0 0 auto;font-size:24px;font-weight:900;line-height:1;
+    color:var(--doux);letter-spacing:2px;height:25px}
+  #scene.solo .lettre{visibility:hidden;height:2px}
+  .boite-img{flex:1 1 auto;display:flex;align-items:center;justify-content:center;
+    min-height:0;width:100%}
+  .cote img{display:block;width:auto;height:auto;max-width:100%;max-height:100%;
+    object-fit:contain;background:#000;border:3px solid var(--trait);
+    border-radius:9px;transition:border-color .18s ease}
+  .cote.ia img{border-color:var(--ia)}
+  .cote.reel img{border-color:var(--reel)}
+
+  /* le badge garde sa place : rien ne saute à la révélation */
+  .badge{flex:0 0 auto;height:46px;width:100%;max-width:520px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;font-weight:900;letter-spacing:.5px;
+    border:2px solid transparent;background:transparent;color:transparent}
+  .cote.ia .badge{background:var(--ia-sombre);border-color:var(--ia);color:var(--ia)}
+  .cote.reel .badge{background:var(--reel-sombre);border-color:var(--reel);color:var(--reel)}
+  .credit{flex:0 0 auto;height:16px;font-size:12px;color:var(--doux);
+    text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;opacity:0;transition:opacity .18s}
+  .cote.montre .credit{opacity:1}
+
+  /* ---------- pied : les réponses ---------- */
+  #pied{flex:0 0 auto;min-height:66px;display:flex;align-items:center;gap:14px;
+    padding:9px 24px;border-top:1px solid var(--trait);background:var(--fond2)}
+  #question{font-size:18px;font-weight:700;flex:0 0 auto}
+  #reponses{display:flex;gap:11px;flex:0 0 auto}
+  .rep{padding:11px 22px;border-radius:9px;border:2px solid var(--trait);
+    background:#1b1f27;color:var(--texte);font-size:17px;font-weight:800;
+    cursor:pointer;font-family:inherit;white-space:nowrap;
+    transition:border-color .13s ease, background .13s ease}
+  .rep:hover:not(:disabled){border-color:var(--ia);background:#232733}
+  .rep:disabled{cursor:default;opacity:.45}
+  .rep .t{font-size:11px;font-weight:700;color:var(--doux);margin-left:8px}
+  #verdict{font-size:19px;font-weight:800;flex:0 0 auto}
+  #verdict.bon{color:var(--reel)}
+  #verdict.faux{color:var(--rate)}
+  #verdict .det{font-weight:400;font-size:15px;color:var(--doux);margin-left:8px}
+  #suite{margin-left:auto;font-size:13px;color:#5c6470;flex:0 0 auto;white-space:nowrap}
+
+  /* ---------- écrans pleins ---------- */
+  .plein{position:fixed;inset:0;background:var(--fond);z-index:20;overflow:auto;
+    display:flex;align-items:center;justify-content:center;padding:40px}
+  .boite{max-width:1040px;width:100%}
+  .boite h1{font-size:clamp(38px,5.8vw,78px);font-weight:900;line-height:1;
+    letter-spacing:-2px;margin-bottom:18px}
+  .boite h1 em{font-style:normal;color:var(--ia)}
+  .chapo{font-size:19px;line-height:1.55;color:var(--doux);margin-bottom:24px}
+  .chapo b{color:var(--texte)}
+  .depart{font-size:17px;color:var(--doux)}
+  .depart b{color:var(--texte)}
+  #chargement{font-size:14px;color:#6b7280;margin-top:16px}
+
+  .modes{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px}
+  .mode{background:var(--fond2);border:2px solid var(--trait);border-radius:12px;
+    padding:20px 22px;cursor:pointer;text-align:left;font-family:inherit;color:inherit;
+    transition:border-color .15s ease, background .15s ease}
+  .mode:hover,.mode:focus{border-color:var(--ia);background:#181b23;outline:none}
+  .mode .num{font-size:11px;font-weight:800;letter-spacing:1.5px;color:var(--doux);
+    text-transform:uppercase;margin-bottom:8px}
+  .mode b{display:block;font-size:23px;font-weight:800;margin-bottom:6px}
+  .mode span{display:block;font-size:14.5px;line-height:1.45;color:var(--doux)}
+
+  .cartes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
+  .carte{background:var(--fond2);border:1px solid var(--trait);border-radius:10px;
+    padding:14px 16px}
+  .carte b{display:block;font-size:15px;margin-bottom:5px}
+  .carte span{font-size:14px;line-height:1.45;color:var(--doux)}
+
+  .scores{display:flex;gap:18px;margin:20px 0 24px;flex-wrap:wrap}
+  .score-c{flex:1 1 180px;background:var(--fond2);border:1px solid var(--trait);
+    border-radius:11px;padding:18px 20px}
+  .score-c .val{font-size:46px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
+  .score-c .nom{font-size:13px;color:var(--doux);margin-top:5px;font-weight:600}
+  .score-c.juste .val{color:var(--reel)}
+  .score-c.rate .val{color:var(--rate)}
+  #classement{margin-bottom:22px;font-size:15px;color:var(--doux)}
+  #classement ol{margin:10px 0 0 22px}
+  #classement li{margin-bottom:4px}
+  #classement b{color:var(--texte)}
+
+  /* ---------- crédits ---------- */
+  #credits table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:14px}
+  #credits th{text-align:left;color:var(--doux);font-size:12px;text-transform:uppercase;
+    letter-spacing:1px;padding:6px 10px;border-bottom:1px solid var(--trait)}
+  #credits td{padding:5px 10px;border-bottom:1px solid #1b1f27;vertical-align:top}
+  #credits td:first-child{color:var(--doux);font-variant-numeric:tabular-nums;width:44px}
+  #credits a{color:#7fb2ff}
+  #credits .lic{color:var(--doux);white-space:nowrap}
+
+  /* ---------- grille ---------- */
+  #grille{position:fixed;inset:0;background:rgba(6,7,10,.975);z-index:30;
+    padding:22px;overflow:auto}
+  #grille h2{font-size:19px;margin-bottom:13px}
+  #grille h2 span{color:var(--doux);font-weight:400;font-size:13.5px}
+  .vignettes{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+  .vig{position:relative;aspect-ratio:3/2;border-radius:6px;overflow:hidden;
+    border:2px solid var(--trait);cursor:pointer;background:#000}
+  .vig img{width:100%;height:100%;object-fit:cover;opacity:.5}
+  .vig.vu img{opacity:.88}
+  .vig.ici{border-color:var(--ia)}
+  .vig.bon{border-color:var(--reel)}
+  .vig.faux{border-color:var(--rate)}
+  .vig .num{position:absolute;left:0;bottom:0;background:rgba(0,0,0,.82);
+    padding:1px 6px;font-size:12px;font-weight:800;border-top-right-radius:5px}
+
+  @media (max-width:900px){
+    #scene{flex-direction:column;gap:10px}
+    .modes,.cartes{grid-template-columns:1fr}
+    #theme{display:none}
+    #pied{flex-wrap:wrap;min-height:auto}
+    #question{font-size:16px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ ACCUEIL / CHOIX DU MODE ============ -->
+<div class="plein" id="ecran-intro">
+  <div class="boite">
+    <h1>IA ou <em>pas IA</em> ?</h1>
+    <p class="chapo">
+      Deux cents images. La moitié sort d'un modèle de génération tournant sur une
+      carte graphique ordinaire. L'autre moitié est une vraie photographie, prise
+      par quelqu'un, quelque part. Saurez-vous encore faire la différence&nbsp;?
+    </p>
+    <div class="modes">
+      <button class="mode" id="mode-duel" type="button">
+        <div class="num">Touche 1</div>
+        <b>Duel</b>
+        <span>Deux images du même sujet, côte à côte. Une seule est générée&nbsp;:
+          laquelle&nbsp;? <b style="color:var(--texte)" id="nb-duels">…</b></span>
+      </button>
+      <button class="mode" id="mode-solo" type="button">
+        <div class="num">Touche 2</div>
+        <b>Solo</b>
+        <span>Une image à la fois, sans point de comparaison. Beaucoup plus dur.
+          <b style="color:var(--texte)" id="nb-solo">…</b></span>
+      </button>
+    </div>
+    <p class="depart">Cliquez un mode, ou tapez <kbd>1</kbd> / <kbd>2</kbd>.
+      <a href="#" id="lien-credits" style="color:#7fb2ff;margin-left:16px">Crédits et licences</a></p>
+    <p id="chargement">Préparation des images…</p>
+  </div>
+</div>
+
+<!-- ============ RÈGLES ============ -->
+<div class="plein" id="ecran-regles" hidden>
+  <div class="boite">
+    <h1 style="font-size:40px;margin-bottom:22px">Comment on joue</h1>
+    <div class="cartes" id="cartes-regles"></div>
+    <p class="chapo">
+      Les images générées sortent de <b>Z-Image Turbo</b>, exécuté en local, sans
+      retouche. Les photographies viennent de <b>Wikimedia Commons</b>, sous licence
+      libre&nbsp;: leur auteur s'affiche à la révélation.
+    </p>
+    <p class="depart"><b>Espace</b> pour commencer. <kbd>Origine</kbd> pour changer de mode.</p>
+  </div>
+</div>
+
+<!-- ============ JEU ============ -->
+<div id="app" hidden>
+  <div id="barre">
+    <div class="marque">IA ou <span>pas IA</span> ?</div>
+    <div id="mode-tag">Duel</div>
+    <div id="theme"></div>
+    <div id="compte">
+      <div id="score"></div>
+      <div id="pos"><b id="pos-n">1</b> / <span id="pos-t">100</span></div>
+    </div>
+  </div>
+  <div id="jauge" style="width:0"></div>
+
+  <div id="scene">
+    <div class="cote" id="cote-a">
+      <div class="lettre">A</div>
+      <div class="boite-img"><img id="img-a" alt=""></div>
+      <div class="badge" id="badge-a"></div>
+      <div class="credit" id="credit-a"></div>
+    </div>
+    <div class="cote" id="cote-b">
+      <div class="lettre">B</div>
+      <div class="boite-img"><img id="img-b" alt=""></div>
+      <div class="badge" id="badge-b"></div>
+      <div class="credit" id="credit-b"></div>
+    </div>
+  </div>
+
+  <div id="pied">
+    <div id="question"></div>
+    <div id="reponses">
+      <button class="rep" id="rep-1" type="button"></button>
+      <button class="rep" id="rep-2" type="button"></button>
+    </div>
+    <div id="verdict"></div>
+    <div id="suite"></div>
+  </div>
+</div>
+
+<!-- ============ BILAN ============ -->
+<div class="plein" id="ecran-bilan" hidden>
+  <div class="boite">
+    <h1>C'est fini.</h1>
+    <p class="chapo" id="bilan-phrase"></p>
+    <div class="scores">
+      <div class="score-c juste"><div class="val" id="v-juste">0</div>
+        <div class="nom">bonnes réponses</div></div>
+      <div class="score-c rate"><div class="val" id="v-rate">0</div>
+        <div class="nom">erreurs</div></div>
+      <div class="score-c"><div class="val" id="v-taux">—</div>
+        <div class="nom">de réussite</div></div>
+    </div>
+    <p class="chapo" id="bilan-lecture"></p>
+    <div id="classement" hidden></div>
+    <p class="depart"><kbd>G</kbd> revoir une image · <kbd>Origine</kbd> changer de mode.</p>
+  </div>
+</div>
+
+<!-- ============ CRÉDITS ============ -->
+<div class="plein" id="ecran-credits" hidden style="align-items:flex-start">
+  <div class="boite" style="max-width:1120px">
+    <h1 style="font-size:38px;margin-bottom:14px">Crédits et licences</h1>
+    <p class="chapo" style="margin-bottom:10px">
+      Les cent images générées viennent de <b>Z-Image Turbo</b>, exécuté en local
+      (8&nbsp;étapes, CFG&nbsp;1.0, 1216×832), sans retouche.<br>
+      Les cent photographies viennent de <b>Wikimedia Commons</b>. Chacune reste
+      sous sa propre licence, rappelée ci-dessous&nbsp;; les copies utilisées ici
+      sont redimensionnées et converties en WebP, et sont redistribuées aux mêmes
+      conditions que l'original.
+    </p>
+    <p class="depart" style="font-size:15px"><kbd>Échap</kbd> pour revenir.</p>
+    <div id="credits"></div>
+  </div>
+</div>
+
+<!-- ============ GRILLE ============ -->
+<div id="grille" hidden>
+  <h2>Aller à une image <span>— clic, ou <kbd>Échap</kbd> pour fermer.
+    Le liseré vert ou orange rappelle vos réponses.</span></h2>
+  <div class="vignettes" id="vignettes"></div>
+</div>
+
+<script src="donnees.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var INTRO = 0, REGLES = 1, PREMIER = 2;
+  var mode = "duels";
+  var pos = INTRO, revele = false, reponses = {};
+
+  /* Le SDK Atlas n'existe que sur random.plagnito.com. Ouverte depuis un
+     fichier local, la page doit marcher pareil : tout passe par ce garde. */
+  var atlas = (typeof window.atlasJeu === "object" && window.atlasJeu) || null;
+  function accorde(quoi){
+    return !!(atlas && atlas.capacites && atlas.capacites[quoi]);
+  }
+
+  function liste(){ return JEU[mode]; }
+  function dernier(){ return PREMIER + liste().length - 1; }
+  function bilanPos(){ return dernier() + 1; }
+  function el(id){ return document.getElementById(id); }
+  var ecrans = { intro:el("ecran-intro"), regles:el("ecran-regles"),
+                 jeu:el("app"), bilan:el("ecran-bilan") };
+
+  function cle(){ return "iaoupasia-" + mode; }
+  function charger(){
+    try { reponses = JSON.parse(localStorage.getItem(cle()) || "{}"); }
+    catch (e) { reponses = {}; }
+  }
+  function sauver(){
+    try { localStorage.setItem(cle(), JSON.stringify(reponses)); } catch(e){}
+  }
+
+  /* --- préchargement : un direct ne supporte pas une image qui arrive en retard --- */
+  var prets = 0, total = JEU.solo.length;
+  JEU.solo.forEach(function(f){
+    var im = new Image();
+    im.onload = im.onerror = function(){
+      prets++;
+      var t = el("chargement");
+      if (t) t.textContent = prets < total
+        ? "Préparation des images… " + prets + " / " + total
+        : "Les " + total + " images sont en mémoire.";
+    };
+    im.src = f.img;
+  });
+
+  function montrer(quoi){ for (var k in ecrans) ecrans[k].hidden = (k !== quoi); }
+
+  var REGLES_TEXTE = {
+    duels: [["Deux images, une réponse",
+             "À gauche <b>A</b>, à droite <b>B</b>. Une seule des deux est générée : désignez-la."],
+            ["Pas de minuteur",
+             "Aucune limite de temps. Prenez-en autant que vous voulez avant de répondre."],
+            ["Le côté change",
+             "L'IA n'est pas toujours du même côté, et l'alternance n'a aucun rythme régulier."]],
+    solo:  [["Une image, un verdict",
+             "L'image s'affiche seule, sans rien à quoi la comparer. Générée, ou photographie ?"],
+            ["Pas de minuteur",
+             "Aucune limite de temps. Prenez-en autant que vous voulez avant de répondre."],
+            ["Moitié-moitié",
+             "Cent images générées et cent photographies exactement, dans un ordre irrégulier."]]
+  };
+  function poserRegles(){
+    el("cartes-regles").innerHTML = REGLES_TEXTE[mode].map(function(c){
+      return '<div class="carte"><b>' + c[0] + '</b><span>' + c[1] + '</span></div>';
+    }).join("");
+  }
+
+  function choisirMode(m){
+    mode = m; charger();
+    el("mode-tag").textContent = (m === "duels" ? "Duel" : "Solo");
+    el("pos-t").textContent = liste().length;
+    el("vignettes").innerHTML = "";
+    poserRegles();
+    pos = REGLES; revele = false; rendre();
+  }
+
+  function compter(){
+    var bon = 0, faux = 0;
+    liste().forEach(function(d){
+      var r = reponses[d.n];
+      if (r === undefined) return;
+      if (r) bon++; else faux++;
+    });
+    return { bon:bon, faux:faux, total:bon + faux };
+  }
+
+  /* --- la bonne réponse, exprimée comme le numéro du bouton (1 ou 2) --- */
+  function bonBouton(d){
+    return (mode === "duels") ? (d.a.ia ? 1 : 2) : (d.ia ? 1 : 2);
+  }
+
+  function rendre(){
+    if (pos === INTRO)  { montrer("intro");  return; }
+    if (pos === REGLES) { montrer("regles"); return; }
+    if (pos === bilanPos()) { montrer("bilan"); bilan(); return; }
+
+    montrer("jeu");
+    var duel = (mode === "duels");
+    var d = liste()[pos - PREMIER];
+    el("scene").className = duel ? "" : "solo";
+    el("cote-b").hidden = !duel;
+    el("theme").textContent = d.theme;
+    el("pos-n").textContent = d.n;
+    el("jauge").style.width = (d.n / liste().length * 100) + "%";
+
+    var c = compter();
+    el("score").innerHTML = c.total
+      ? "<b>" + c.bon + "</b> / " + c.total
+      : '<span style="color:#5c6470">pas encore de réponse</span>';
+
+    var faces = duel ? { a:d.a, b:d.b } : { a:d };
+    ["a","b"].forEach(function(k){
+      var face = faces[k];
+      if (!face) return;
+      el("img-" + k).src = face.img;
+      el("img-" + k).alt = revele ? (face.ia ? "Image générée" : "Photographie") : "";
+      el("cote-" + k).className =
+        "cote" + (revele ? " montre " + (face.ia ? "ia" : "reel") : "");
+      el("badge-" + k).textContent =
+        revele ? (face.ia ? "GÉNÉRÉE PAR IA" : "VRAIE PHOTO") : "";
+      var cr = el("credit-" + k);
+      if (!revele) cr.textContent = "";
+      else if (face.ia) cr.textContent = "Z-Image Turbo, généré en local";
+      else cr.textContent = face.auteur + " · " + face.licence + " · Wikimedia Commons";
+    });
+
+    el("question").textContent = duel ? "Laquelle est générée ?" : "Cette image est…";
+    el("rep-1").innerHTML = duel ? 'A <span class="t">1</span>'
+                                 : 'Générée par IA <span class="t">1</span>';
+    el("rep-2").innerHTML = duel ? 'B <span class="t">2</span>'
+                                 : 'Vraie photo <span class="t">2</span>';
+    el("rep-1").disabled = el("rep-2").disabled = revele;
+
+    var v = el("verdict"), rep = reponses[d.n];
+    if (!revele) {
+      v.className = ""; v.textContent = "";
+      el("suite").innerHTML = "<kbd>Espace</kbd> révéler sans répondre";
+    } else {
+      var attendu = bonBouton(d);
+      var nomBon = duel ? (attendu === 1 ? "A" : "B")
+                        : (attendu === 1 ? "l'IA" : "une vraie photo");
+      if (rep === undefined) {
+        v.className = "";
+        v.innerHTML = '<span style="color:var(--doux)">Sans réponse —</span> ' +
+                      "c'était " + nomBon + ".";
+      } else if (rep) {
+        v.className = "bon";
+        v.innerHTML = "Bien vu !" + '<span class="det">c\'était ' + nomBon + "</span>";
+      } else {
+        v.className = "faux";
+        v.innerHTML = "Raté." + '<span class="det">c\'était ' + nomBon + "</span>";
+      }
+      el("suite").innerHTML = "<kbd>Espace</kbd> image suivante";
+    }
+  }
+
+  function repondre(bouton){
+    if (pos < PREMIER || pos > dernier() || revele) return;
+    var d = liste()[pos - PREMIER];
+    reponses[d.n] = (bouton === bonBouton(d));
+    sauver();
+    revele = true;
+    rendre();
+  }
+
+  function bilan(){
+    var c = compter();
+    el("v-juste").textContent = c.bon;
+    el("v-rate").textContent  = c.faux;
+    el("v-taux").textContent  = c.total ? Math.round(c.bon / c.total * 100) + " %" : "—";
+    var pl = c.total > 1;
+    el("bilan-phrase").textContent = c.total
+      ? "Sur " + c.total +
+        (mode === "duels" ? (pl ? " duels joués" : " duel joué")
+                          : (pl ? " images jugées" : " image jugée")) +
+        ", vous en avez reconnu " + c.bon + "."
+      : "Aucune réponse donnée — le score n'était pas l'important.";
+
+    var taux = c.total ? c.bon / c.total : 0;
+    el("bilan-lecture").textContent = !c.total ? ""
+      : taux >= 0.85 ? "À ce niveau, vous voyez encore très nettement la différence."
+      : taux >= 0.65 ? "Vous la voyez encore, mais elle ne saute plus aux yeux."
+      : taux >= 0.55 ? "Vous êtes à peine au-dessus du hasard : la frontière est presque effacée."
+      : "Le hasard pur donnerait 50 %. En dessous, c'est que les repères habituels trompent.";
+
+    /* Le classement ne prend QUE le mode solo : duel et solo n'ont pas le même
+       nombre d'images ni la même difficulté, les mélanger dans une seule table
+       rendrait le rang illisible. C'est dit au joueur plutôt que subi. */
+    if (c.total && mode === "solo" && accorde("classement")) {
+      var boite = el("classement");
+      boite.hidden = false;
+      boite.textContent = "Envoi du score…";
+      Promise.resolve(atlas.soumettreScore(c.bon,
+          c.total + " images jugées"))
+        .then(function(){ return atlas.classement(10); })
+        .then(function(tab){
+          var l = (tab && tab.scores) || tab || [];
+          boite.innerHTML = "<b>Meilleurs yeux — mode solo</b><ol>" + l.map(function(e){
+            return "<li>" + ((e.pseudo || e.nom || "anonyme") + " — " +
+                             (e.score != null ? e.score : e.valeur)) + "</li>";
+          }).join("") + "</ol>";
+        })
+        .catch(function(){ boite.textContent = "Classement indisponible pour le moment."; });
+    }
+  }
+
+  function avancer(){
+    if (pos === INTRO) { choisirMode("duels"); return; }
+    if (pos >= PREMIER && pos <= dernier() && !revele) { revele = true; rendre(); return; }
+    if (pos < bilanPos()) { pos++; revele = false; rendre(); }
+  }
+  function reculer(){
+    if (pos >= PREMIER && pos <= dernier() && revele) { revele = false; rendre(); return; }
+    if (pos > REGLES) { pos--; revele = false; rendre(); }
+  }
+  function allerA(n){ pos = PREMIER + n - 1; revele = false; fermerGrille(); rendre(); }
+
+  var creditsOuverts = false;
+  function basculerCredits(){
+    if (creditsOuverts) {
+      el("ecran-credits").hidden = true; creditsOuverts = false; return;
+    }
+    var boite = el("credits");
+    if (!boite.childElementCount) {
+      var lignes = JEU.duels.map(function(e){
+        var f = e.a.ia ? e.b : e.a;          // la face photographique du duel
+        return "<tr><td>" + e.n + "</td><td>" + f.theme + "</td><td>" + f.auteur +
+               '</td><td class="lic">' + f.licence + "</td><td>" +
+               (f.url ? '<a href="' + f.url + '" target="_blank" rel="noopener">Commons</a>'
+                      : "—") + "</td></tr>";
+      }).join("");
+      boite.innerHTML = "<table><thead><tr><th>#</th><th>Sujet</th><th>Auteur</th>" +
+        "<th>Licence</th><th>Source</th></tr></thead><tbody>" + lignes + "</tbody></table>";
+    }
+    el("ecran-credits").hidden = false; creditsOuverts = true;
+  }
+
+  var grilleOuverte = false;
+  function basculerGrille(){
+    if (grilleOuverte) { fermerGrille(); return; }
+    var c = el("vignettes");
+    if (!c.childElementCount) {
+      liste().forEach(function(d){
+        var v = document.createElement("div");
+        v.className = "vig"; v.dataset.n = d.n;
+        v.innerHTML = '<img src="' + (mode === "duels" ? d.a.img : d.img) +
+                      '" alt="" loading="lazy"><span class="num">' + d.n + '</span>';
+        v.addEventListener("click", function(){ allerA(d.n); });
+        c.appendChild(v);
+      });
+    }
+    var ici = (pos >= PREMIER && pos <= dernier()) ? liste()[pos - PREMIER].n : 0;
+    Array.prototype.forEach.call(c.children, function(v){
+      var n = Number(v.dataset.n), r = reponses[n];
+      v.className = "vig" + (n < ici ? " vu" : "") + (n === ici ? " ici" : "") +
+                    (r === true ? " bon" : r === false ? " faux" : "");
+    });
+    el("grille").hidden = false; grilleOuverte = true;
+  }
+  function fermerGrille(){ el("grille").hidden = true; grilleOuverte = false; }
+
+  document.addEventListener("keydown", function(e){
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    var k = e.key, enJeu = (pos >= PREMIER && pos <= dernier());
+    if (creditsOuverts) {
+      if (k === "Escape" || k === "c" || k === "C") {
+        el("ecran-credits").hidden = true; creditsOuverts = false; e.preventDefault();
+      }
+      return;
+    }
+    if (grilleOuverte && (k === "Escape" || k === "g" || k === "G")) {
+      fermerGrille(); e.preventDefault(); return;
+    }
+    if (k === "c" || k === "C") { basculerCredits(); e.preventDefault(); return; }
+    if (pos === INTRO && (k === "1" || k === "2")) {
+      choisirMode(k === "1" ? "duels" : "solo"); e.preventDefault(); return;
+    }
+    if (enJeu && !revele) {
+      if (k === "1" || k === "a" || k === "A" || k === "i" || k === "I") {
+        repondre(1); e.preventDefault(); return;
+      }
+      if (k === "2" || k === "b" || k === "B" || k === "p" || k === "P") {
+        repondre(2); e.preventDefault(); return;
+      }
+    }
+    switch (k) {
+      case " ": case "Spacebar": case "ArrowRight": case "PageDown": case "Enter":
+        avancer(); break;
+      case "ArrowLeft": case "PageUp": reculer(); break;
+      case "r": case "R": case "ArrowDown": case "ArrowUp":
+        if (enJeu) { revele = !revele; rendre(); } break;
+      case "g": case "G": basculerGrille(); break;
+      case "f": case "F":
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (document.documentElement.requestFullscreen)
+          document.documentElement.requestFullscreen();
+        break;
+      case "Home": pos = INTRO; revele = false; fermerGrille(); rendre(); break;
+      case "End":  pos = bilanPos(); revele = false; fermerGrille(); rendre(); break;
+      default: return;
+    }
+    e.preventDefault();
+  });
+
+  el("scene").addEventListener("click", avancer);
+  ecrans.regles.addEventListener("click", avancer);
+  el("mode-duel").addEventListener("click", function(){ choisirMode("duels"); });
+  el("mode-solo").addEventListener("click", function(){ choisirMode("solo"); });
+  el("mode-tag").addEventListener("click", function(){
+    pos = INTRO; revele = false; fermerGrille(); rendre();
+  });
+  el("rep-1").addEventListener("click", function(e){ e.stopPropagation(); repondre(1); });
+  el("rep-2").addEventListener("click", function(e){ e.stopPropagation(); repondre(2); });
+
+  el("lien-credits").addEventListener("click", function(e){
+    e.preventDefault(); e.stopPropagation(); basculerCredits();
+  });
+  el("nb-duels").textContent = JEU.duels.length + " duels.";
+  el("nb-solo").textContent  = JEU.solo.length + " images.";
+  charger();
+  rendre();
+})();
+</script>
+</body>
+</html>

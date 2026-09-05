@@ -1,0 +1,2 @@
+# Rien d'ignore ici : tout ce qui est present doit etre servi.
+# (Un dossier servi mais ignore par git est l'erreur que verifier.js attrape.)
