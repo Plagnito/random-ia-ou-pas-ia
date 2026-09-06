@@ -16,6 +16,69 @@
       "sens": "desc",
       "unite": "images reconnues",
       "titre": "Les meilleurs yeux (mode solo)"
-    }
+    },
+    "succes": [
+      {
+        "id": "premier-pas",
+        "titre": "Premier verdict",
+        "texte": "Vous avez tranché sur une première image."
+      },
+      {
+        "id": "premiere-erreur",
+        "titre": "Premier raté",
+        "texte": "Une image vous a eu. Ce sera la première d'une longue série."
+      },
+      {
+        "id": "partie-gagnee",
+        "titre": "Partie gagnée",
+        "texte": "Terminer une partie avec au moins 60 % de bonnes réponses."
+      },
+      {
+        "id": "partie-perdue",
+        "titre": "Partie perdue",
+        "texte": "Terminer une partie sous 50 % — le hasard aurait fait mieux."
+      },
+      {
+        "id": "sans-faute",
+        "titre": "Sans faute",
+        "texte": "Terminer une partie d'au moins 20 sujets sans une seule erreur."
+      },
+      {
+        "id": "images-50",
+        "titre": "Cinquante",
+        "texte": "Reconnaître 50 images différentes."
+      },
+      {
+        "id": "images-100",
+        "titre": "Cent",
+        "texte": "Reconnaître 100 images différentes."
+      },
+      {
+        "id": "images-250",
+        "titre": "Deux cent cinquante",
+        "texte": "Reconnaître 250 images différentes."
+      },
+      {
+        "id": "images-500",
+        "titre": "Cinq cents",
+        "texte": "Reconnaître 500 images différentes."
+      },
+      {
+        "id": "expert-50",
+        "titre": "L'œil technique",
+        "texte": "Reconnaître 50 images du lot expert — matière, gros plans, lumière difficile."
+      },
+      {
+        "id": "solo-100",
+        "titre": "Sans comparaison",
+        "texte": "Reconnaître 100 images en mode solo, sans point de comparaison."
+      },
+      {
+        "id": "revenant",
+        "titre": "Le revenant",
+        "secret": true,
+        "texte": "Revenir jouer après avoir terminé une partie complète."
+      }
+    ]
   }
 }

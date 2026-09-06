@@ -173,6 +173,14 @@
   .opt.actif{background:var(--ia-sombre);border-color:var(--ia);color:#f6d6ff}
   .stock{font-size:13px;color:#6b7480;margin:2px 0 0}
 
+  #succes-flash{position:fixed;right:20px;top:70px;z-index:40;
+    background:var(--fond2);border:1px solid var(--ia);border-left-width:4px;
+    border-radius:9px;padding:11px 16px;display:flex;flex-direction:column;gap:2px;
+    box-shadow:0 8px 26px rgba(0,0,0,.5);max-width:280px}
+  #succes-flash b{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;
+    color:var(--ia)}
+  #succes-flash span{font-size:15px;font-weight:700}
+
   @media (max-width:900px){
     #scene{flex-direction:column;gap:10px}
     .modes,.cartes{grid-template-columns:1fr}
@@ -205,9 +213,10 @@
       <div class="rangee">
         <span class="etiq">Longueur</span>
         <div class="opts" id="choix-longueur">
-          <button class="opt actif" type="button" data-v="0">Tout</button>
-          <button class="opt" type="button" data-v="25">25 sujets</button>
-          <button class="opt" type="button" data-v="60">60 sujets</button>
+          <button class="opt" type="button" data-v="20">20</button>
+          <button class="opt" type="button" data-v="50">50</button>
+          <button class="opt actif" type="button" data-v="100">100</button>
+          <button class="opt" type="button" data-v="0">Tout</button>
         </div>
       </div>
       <p class="stock" id="stock"></p>
@@ -288,6 +297,9 @@
   </div>
 </div>
 
+<!-- ============ SUCCÈS (annonce fugitive) ============ -->
+<div id="succes-flash" hidden></div>
+
 <!-- ============ BILAN ============ -->
 <div class="plein" id="ecran-bilan" hidden>
   <div class="boite">
@@ -302,6 +314,7 @@
         <div class="nom">de réussite</div></div>
     </div>
     <p class="chapo" id="bilan-lecture"></p>
+    <p class="chapo" id="bilan-cumul" style="font-size:16px;color:var(--doux)"></p>
     <div id="classement" hidden></div>
     <p class="depart"><kbd>G</kbd> revoir une image · <kbd>Origine</kbd> changer de mode.</p>
   </div>
@@ -338,7 +351,9 @@
   "use strict";
 
   var INTRO = 0, REGLES = 1, PREMIER = 2;
-  var mode = "duels", niveau = "tout", longueur = 0;   /* 0 = tout */
+  /* 100 sujets par defaut : 370 duels d'affilee, personne ne les finit, et le
+   bilan devient inatteignable — donc le score de fin ne s'affiche jamais. */
+var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
   var pos = INTRO, revele = false, reponses = {};
   var partie = { duels: [], solo: [] };
 
@@ -401,8 +416,9 @@
       } else { serie = 0; }
       precedent = cote;
       e.cote = cote;                       /* cote de l'image GENEREE */
-      e.a = cote === "a" ? e.p.ia : e.p.reel;
-      e.b = cote === "a" ? e.p.reel : e.p.ia;
+      var gi = genere(e.p);
+      e.a = cote === "a" ? e.p.f[gi] : e.p.f[1 - gi];
+      e.b = cote === "a" ? e.p.f[1 - gi] : e.p.f[gi];
       e.aIa = (cote === "a");
       e.theme = e.p.theme;
       e.cle = "d" + e.p.id;
@@ -451,10 +467,11 @@
   function batirSolo(paires, tirer){
     var reste = [];
     paires.forEach(function(p){
-      reste.push({ p:p, ia:true,  face:p.ia,   theme:p.theme, cle:"s" + p.id + "i",
-                   sujet:p.cle });
-      reste.push({ p:p, ia:false, face:p.reel, theme:p.theme, cle:"s" + p.id + "r",
-                   sujet:p.cle });
+      var gi = genere(p);
+      reste.push({ p:p, ia:true,  face:p.f[gi],     theme:p.theme,
+                   cle:"s" + p.id + "i", sujet:p.cle });
+      reste.push({ p:p, ia:false, face:p.f[1 - gi], theme:p.theme,
+                   cle:"s" + p.id + "r", sujet:p.cle });
     });
     reste = melanger(reste, tirer);
 
@@ -523,6 +540,11 @@
     return out;
   }
 
+  /* Quelle des deux faces est l'image generee : 0 ou 1.
+     `k` porte l'information brouillee (cf. construire.py). Seul le bit de poids
+     faible compte, et il survit a la conversion 32 bits de JavaScript. */
+  function genere(p){ return ((p.k & 1) ^ 1) ^ (p.id & 1); }
+
   function paquet(){
     return JEU.paires.filter(function(p){
       return niveau === "tout" || p.niveau === niveau;
@@ -545,6 +567,44 @@
      Les reponses sont rangees par IDENTIFIANT de paire, jamais par position :
      l'ordre changeant a chaque partie, une cle positionnelle attribuerait la
      reponse d'hier a l'image d'aujourd'hui. */
+  /* ── La memoire, qui SURVIT a la partie ────────────────────────────────────
+     Le compteur de l'ecran de jeu ne dit que la partie en cours : c'est utile
+     pendant qu'on joue, et faux des qu'on en commence une autre — il repartait
+     de zero, et le joueur ne voyait donc jamais progresser « ce qu'il a
+     reconnu ». On garde donc, a cote, un relevé par IMAGE : chaque image du jeu
+     y est marquee reconnue ou ratee, une fois pour toutes.
+     ⚠️ En duel, une bonne reponse tranche les DEUX images : designer la generee,
+     c'est dire aussi que l'autre ne l'est pas. Les compter toutes les deux est
+     donc exact, et c'est ce qui rend le total comparable entre les deux modes. */
+  var MEM = { trouvees:{}, ratees:{}, solo:{}, parties:0, finies:0, succes:{} };
+  function chargerMemoire(){
+    try {
+      var m = JSON.parse(localStorage.getItem("iaoupasia2-memoire") || "{}");
+      if (m && typeof m === "object") {
+        MEM.trouvees = m.trouvees || {}; MEM.ratees = m.ratees || {};
+        MEM.solo = m.solo || {};
+        MEM.parties = m.parties || 0; MEM.finies = m.finies || 0;
+        MEM.succes = m.succes || {};
+      }
+    } catch (e) { /* stockage refuse : on joue sans memoire, pas sans jeu */ }
+  }
+  function sauverMemoire(){
+    try { localStorage.setItem("iaoupasia2-memoire", JSON.stringify(MEM)); } catch(e){}
+  }
+  function compteMemoire(quoi, filtre){
+    var n = 0, t = MEM[quoi];
+    for (var k in t) if (Object.prototype.hasOwnProperty.call(t, k)) {
+      if (!filtre || filtre(k)) n++;
+    }
+    return n;
+  }
+  /* Une image = l'identifiant de sa paire, suffixe par son espece. */
+  function marquer(paire, ia, juste){
+    var k = paire.id + (ia ? "i" : "r");
+    if (juste) { MEM.trouvees[k] = 1; delete MEM.ratees[k]; }
+    else if (!MEM.trouvees[k]) { MEM.ratees[k] = 1; }
+  }
+
   function cle(){ return "iaoupasia2-" + mode + "-" + niveau; }
   function charger(){
     try { reponses = JSON.parse(localStorage.getItem(cle()) || "{}"); }
@@ -602,6 +662,11 @@
 
   function choisirMode(m){
     mode = m; batirPartie(); charger();
+    bilanCompte = false;
+    MEM.parties++;
+    /* « Revenant » : etre revenu jouer apres avoir termine une partie. */
+    if (MEM.finies >= 1) debloquer("revenant");
+    sauverMemoire();
     el("mode-tag").textContent = (m === "duels" ? "Duel" : "Solo");
     el("pos-t").textContent = liste().length;
     el("vignettes").innerHTML = "";
@@ -626,7 +691,13 @@
   }
 
   function rendre(){
-    if (pos === INTRO)  { montrer("intro");  return; }
+    /* ⚠️ L'accueil doit etre RECALCULE a chaque fois qu'on y revient. Il ne
+       l'etait qu'au chargement et sur un clic d'option : apres une partie, le
+       compteur d'images reconnues affichait donc encore l'etat d'avant — c'est
+       exactement le defaut signale, « le score ne se met pas a jour ». Un ecran
+       qui porte un compteur doit se peindre a l'affichage, jamais une fois pour
+       toutes. */
+    if (pos === INTRO)  { compterAffiche(); montrer("intro");  return; }
     if (pos === REGLES) { montrer("regles"); return; }
     if (pos === bilanPos()) { montrer("bilan"); bilan(); return; }
 
@@ -661,7 +732,7 @@
       var cr = el("credit-" + k);
       if (!revele) cr.textContent = "";
       else if (ia) cr.textContent = "Z-Image Turbo, généré en local";
-      else cr.textContent = face.auteur + " · " + face.licence + " · Wikimedia Commons";
+      else cr.textContent = d.p.c.a + " · " + d.p.c.l + " · Wikimedia Commons";
     });
 
     el("question").textContent = duel ? "Laquelle est générée ?" : "Cette image est…";
@@ -697,14 +768,83 @@
   function repondre(bouton){
     if (pos < PREMIER || pos > dernier() || revele) return;
     var d = liste()[pos - PREMIER];
-    reponses[d.cle] = (bouton === bonBouton(d));
-    sauver();
+    var juste = (bouton === bonBouton(d));
+    reponses[d.cle] = juste;
+    /* En duel, une reponse tranche les DEUX images (cf. commentaire de MEM). */
+    if (mode === "duels") { marquer(d.p, true, juste); marquer(d.p, false, juste); }
+    else { marquer(d.p, d.ia, juste); if (juste) MEM.solo[d.p.id + (d.ia?"i":"r")] = 1; }
+    sauver(); sauverMemoire();
+    debloquer("premier-pas");
+    if (!juste) debloquer("premiere-erreur");
+    verifierSeuils();
     revele = true;
     rendre();
   }
 
+  /* ── Les succes ────────────────────────────────────────────────────────────
+     Le serveur ne connait que la liste FIGEE dans random.json a la synchro :
+     debloquer un identifiant absent de cette liste est refuse, silencieusement
+     du point de vue du joueur. Tout succes ajoute ici doit donc l'etre aussi
+     la-bas, et la piece republiee.
+     ⚠️ Le succes est d'abord garde EN LOCAL, et seulement ensuite envoye. Sans
+     ca, un joueur non connecte — le cas le plus courant sur une pochade — ne
+     verrait jamais rien se debloquer. */
+  function debloquer(id){
+    if (MEM.succes[id]) return;
+    MEM.succes[id] = 1;
+    sauverMemoire();
+    annoncerSucces(id);
+    if (accorde("succes") && atlas.succes) {
+      try { Promise.resolve(atlas.succes.debloquer(id)).catch(function(){}); } catch(e){}
+    }
+  }
+  var TITRES = { "premier-pas":"Premier verdict", "premiere-erreur":"Premier raté",
+    "partie-gagnee":"Partie gagnée", "partie-perdue":"Partie perdue",
+    "sans-faute":"Sans faute", "images-50":"Cinquante", "images-100":"Cent",
+    "images-250":"Deux cent cinquante", "images-500":"Cinq cents",
+    "expert-50":"L'œil technique", "solo-100":"Sans comparaison",
+    "revenant":"Le revenant" };
+  function annoncerSucces(id){
+    var b = el("succes-flash");
+    if (!b) return;
+    b.innerHTML = '<b>Succès débloqué</b><span>' + (TITRES[id] || id) + '</span>';
+    b.hidden = false;
+    clearTimeout(annoncerSucces.t);
+    annoncerSucces.t = setTimeout(function(){ b.hidden = true; }, 4200);
+  }
+  function verifierSeuils(){
+    var n = compteMemoire("trouvees");
+    if (n >= 50)  debloquer("images-50");
+    if (n >= 100) debloquer("images-100");
+    if (n >= 250) debloquer("images-250");
+    if (n >= 500) debloquer("images-500");
+    if (compteMemoire("trouvees", estExpert) >= 50) debloquer("expert-50");
+    var s = 0; for (var k in MEM.solo) if (MEM.solo.hasOwnProperty(k)) s++;
+    if (s >= 100) debloquer("solo-100");
+  }
+  /* La cle d'une image est « <id de paire><i|r> » : on retrouve son niveau en
+     retirant le suffixe. */
+  var NIVEAU_PAR_ID = {};
+  JEU.paires.forEach(function(p){ NIVEAU_PAR_ID[p.id] = p.niveau; });
+  function estExpert(k){
+    return NIVEAU_PAR_ID[Number(k.slice(0, -1))] === "expert";
+  }
+
+  var bilanCompte = false;
   function bilan(){
     var c = compter();
+    /* Une partie ne compte qu'UNE fois : `bilan()` est rappele a chaque rendu de
+       l'ecran de fin (retour arriere, ouverture de la grille), et sans ce garde
+       le meme resultat serait comptabilise en boucle. */
+    if (!bilanCompte && c.total) {
+      bilanCompte = true;
+      MEM.finies++;
+      var taux0 = c.bon / c.total;
+      if (taux0 >= 0.60) debloquer("partie-gagnee");
+      if (taux0 < 0.50) debloquer("partie-perdue");
+      if (c.faux === 0 && c.total >= 20) debloquer("sans-faute");
+      sauverMemoire();
+    }
     el("v-juste").textContent = c.bon;
     el("v-rate").textContent  = c.faux;
     el("v-taux").textContent  = c.total ? Math.round(c.bon / c.total * 100) + " %" : "—";
@@ -715,6 +855,13 @@
                           : (pl ? " images jugées" : " image jugée")) +
         ", vous en avez reconnu " + c.bon + "."
       : "Aucune réponse donnée — le score n'était pas l'important.";
+
+    var reconnues = compteMemoire("trouvees");
+    var totalImages = JEU.paires.length * 2;
+    el("bilan-cumul").innerHTML =
+      "Depuis le début, vous avez reconnu <b>" + reconnues + "</b> images "
+      + "différentes sur " + totalImages + " — soit "
+      + Math.round(reconnues / totalImages * 100) + " % du jeu.";
 
     var taux = c.total ? c.bon / c.total : 0;
     el("bilan-lecture").textContent = !c.total ? ""
@@ -774,11 +921,11 @@
          qu'on redistribue, et l'archive contient les huit cents images quelle
          que soit la partie jouee. */
       var lignes = JEU.paires.map(function(p){
-        var f = p.reel;
-        return "<tr><td>" + p.id + "</td><td>" + p.theme + "</td><td>" + f.auteur +
-               '</td><td class="lic">' + f.licence + "</td><td>" +
-               (f.url ? '<a href="' + f.url + '" target="_blank" rel="noopener">Commons</a>'
-                      : "—") + "</td></tr>";
+        var f = p.c;                     /* le credit appartient a la photographie */
+        return "<tr><td>" + p.id + "</td><td>" + p.theme + "</td><td>" + f.a +
+               '</td><td class="lic">' + f.l + "</td><td>" +
+               (f.u ? '<a href="' + f.u + '" target="_blank" rel="noopener">Commons</a>'
+                    : "—") + "</td></tr>";
       }).join("");
       boite.innerHTML = "<table><thead><tr><th>#</th><th>Sujet</th><th>Auteur</th>" +
         "<th>Licence</th><th>Source</th></tr></thead><tbody>" + lignes + "</tbody></table>";
@@ -886,6 +1033,8 @@
         try { localStorage.removeItem("iaoupasia2-" + m + "-" + n); } catch(err){}
       });
     });
+    try { localStorage.removeItem("iaoupasia2-memoire"); } catch(err){}
+    MEM = { trouvees:{}, ratees:{}, solo:{}, parties:0, finies:0, succes:{} };
     reponses = {};
     el("lien-oublier").textContent = "Scores effacés";
     compterAffiche();
@@ -915,9 +1064,13 @@
     el("nb-solo").textContent  = (pris * 2) + " images.";
     var dispo = { standard:0, expert:0 };
     JEU.paires.forEach(function(p){ dispo[p.niveau] = (dispo[p.niveau] || 0) + 1; });
-    el("stock").textContent =
+    var reconnues = compteMemoire("trouvees");
+    el("stock").innerHTML =
       JEU.paires.length + " sujets en tout — " + (dispo.standard || 0) +
-      " standard, " + (dispo.expert || 0) + " expert.";
+      " standard, " + (dispo.expert || 0) + " expert."
+      + (reconnues ? '<br><b style="color:var(--reel)">' + reconnues
+                     + "</b> images reconnues sur " + (JEU.paires.length * 2)
+                     + " — ce compte-là ne repart jamais de zéro." : "");
     /* Le nombre est LU dans les donnees, jamais ecrit dans la page : un theme
        dont la photographie manque est ecarte a la construction, et un chiffre
        en dur deviendrait faux sans que rien ne le dise. */
@@ -932,6 +1085,7 @@
   window.__ordre = { des:des, melanger:melanger,
                      batirDuels:batirDuels, batirSolo:batirSolo };
 
+  chargerMemoire();
   compterAffiche();
   batirPartie();
   charger();
