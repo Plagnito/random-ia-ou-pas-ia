@@ -54,7 +54,12 @@
     min-height:0;width:100%}
   .cote img{display:block;width:auto;height:auto;max-width:100%;max-height:100%;
     object-fit:contain;background:#000;border:3px solid var(--trait);
-    border-radius:9px;transition:border-color .18s ease}
+    border-radius:9px;transition:border-color .18s ease, box-shadow .18s ease}
+  /* Une image cliquable doit se voir cliquable AVANT le clic : sans ce survol,
+     personne ne devine que le geste existe. Reserve au duel non revele — la
+     classe est posee par la page, pas par un media query. */
+  #scene.repondable .cote{cursor:pointer}
+  #scene.repondable .cote:hover img{border-color:#5b657a}
   .cote.ia img{border-color:var(--ia)}
   .cote.reel img{border-color:var(--reel)}
 
@@ -154,6 +159,20 @@
   .vig .num{position:absolute;left:0;bottom:0;background:rgba(0,0,0,.82);
     padding:1px 6px;font-size:12px;font-weight:800;border-top-right-radius:5px}
 
+  .reglages{margin:0 0 22px;display:flex;flex-direction:column;gap:10px;
+    align-items:center}
+  .rangee{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    justify-content:center}
+  .etiq{font-size:12px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+    color:var(--doux);min-width:74px;text-align:right}
+  .opts{display:flex;gap:7px}
+  .opt{padding:7px 15px;border-radius:8px;border:1px solid var(--trait);
+    background:#171a21;color:var(--doux);font-family:inherit;font-size:14px;
+    font-weight:700;cursor:pointer}
+  .opt:hover{border-color:#3d4453;color:var(--texte)}
+  .opt.actif{background:var(--ia-sombre);border-color:var(--ia);color:#f6d6ff}
+  .stock{font-size:13px;color:#6b7480;margin:2px 0 0}
+
   @media (max-width:900px){
     #scene{flex-direction:column;gap:10px}
     .modes,.cartes{grid-template-columns:1fr}
@@ -170,10 +189,29 @@
   <div class="boite">
     <h1>IA ou <em>pas IA</em> ?</h1>
     <p class="chapo">
-      Deux cents images. La moitié sort d'un modèle de génération tournant sur une
+      <b id="nb-total">…</b> images. La moitié sort d'un modèle de génération tournant sur une
       carte graphique ordinaire. L'autre moitié est une vraie photographie, prise
       par quelqu'un, quelque part. Saurez-vous encore faire la différence&nbsp;?
     </p>
+    <div class="reglages">
+      <div class="rangee">
+        <span class="etiq">Niveau</span>
+        <div class="opts" id="choix-niveau">
+          <button class="opt actif" type="button" data-v="tout">Tout</button>
+          <button class="opt" type="button" data-v="standard">Standard</button>
+          <button class="opt" type="button" data-v="expert">Expert</button>
+        </div>
+      </div>
+      <div class="rangee">
+        <span class="etiq">Longueur</span>
+        <div class="opts" id="choix-longueur">
+          <button class="opt actif" type="button" data-v="0">Tout</button>
+          <button class="opt" type="button" data-v="25">25 sujets</button>
+          <button class="opt" type="button" data-v="60">60 sujets</button>
+        </div>
+      </div>
+      <p class="stock" id="stock"></p>
+    </div>
     <div class="modes">
       <button class="mode" id="mode-duel" type="button">
         <div class="num">Touche 1</div>
@@ -189,8 +227,11 @@
       </button>
     </div>
     <p class="depart">Cliquez un mode, ou tapez <kbd>1</kbd> / <kbd>2</kbd>.
-      <a href="#" id="lien-credits" style="color:#7fb2ff;margin-left:16px">Crédits et licences</a></p>
-    <p id="chargement">Préparation des images…</p>
+      <a href="#" id="lien-credits" style="color:#7fb2ff;margin-left:16px">Crédits et licences</a>
+      <a href="#" id="lien-oublier" style="color:#7fb2ff;margin-left:16px">Effacer mes scores</a></p>
+    <p id="chargement" style="font-size:14px;color:#6b7480">
+      L'ordre change à chaque partie. Pour rejouer exactement la même,
+      ajoutez <code>?graine=1234</code> à l'adresse.</p>
   </div>
 </div>
 
@@ -271,12 +312,13 @@
   <div class="boite" style="max-width:1120px">
     <h1 style="font-size:38px;margin-bottom:14px">Crédits et licences</h1>
     <p class="chapo" style="margin-bottom:10px">
-      Les cent images générées viennent de <b>Z-Image Turbo</b>, exécuté en local
-      (8&nbsp;étapes, CFG&nbsp;1.0, 1216×832), sans retouche.<br>
-      Les cent photographies viennent de <b>Wikimedia Commons</b>. Chacune reste
-      sous sa propre licence, rappelée ci-dessous&nbsp;; les copies utilisées ici
-      sont redimensionnées et converties en WebP, et sont redistribuées aux mêmes
-      conditions que l'original.
+      Les images générées viennent de <b>Z-Image Turbo</b>, exécuté en local, sans
+      retouche&nbsp;: 8&nbsp;étapes pour le lot standard, <b>16&nbsp;étapes</b> pour
+      le lot expert, CFG&nbsp;1.0, six formats autour du million de pixels.<br>
+      Les photographies viennent de <b>Wikimedia Commons</b>. Chacune reste sous sa
+      propre licence, rappelée ci-dessous&nbsp;; les copies utilisées ici sont
+      légèrement recadrées, redimensionnées et converties en AVIF, et sont
+      redistribuées aux mêmes conditions que l'original.
     </p>
     <p class="depart" style="font-size:15px"><kbd>Échap</kbd> pour revenir.</p>
     <div id="credits"></div>
@@ -296,8 +338,9 @@
   "use strict";
 
   var INTRO = 0, REGLES = 1, PREMIER = 2;
-  var mode = "duels";
+  var mode = "duels", niveau = "tout", longueur = 0;   /* 0 = tout */
   var pos = INTRO, revele = false, reponses = {};
+  var partie = { duels: [], solo: [] };
 
   /* Le SDK Atlas n'existe que sur random.plagnito.com. Ouverte depuis un
      fichier local, la page doit marcher pareil : tout passe par ce garde. */
@@ -306,14 +349,203 @@
     return !!(atlas && atlas.capacites && atlas.capacites[quoi]);
   }
 
-  function liste(){ return JEU[mode]; }
-  function dernier(){ return PREMIER + liste().length - 1; }
-  function bilanPos(){ return dernier() + 1; }
   function el(id){ return document.getElementById(id); }
   var ecrans = { intro:el("ecran-intro"), regles:el("ecran-regles"),
                  jeu:el("app"), bilan:el("ecran-bilan") };
 
-  function cle(){ return "iaoupasia-" + mode; }
+  /* ------------------------------------------------------------------ ordre
+     L'ordre est tire A CHAQUE PARTIE. La version 1 le figeait a la
+     construction pour qu'un animateur retrouve une image au meme numero d'une
+     repetition a l'autre ; ce besoin-la n'a pas disparu, il a juste change de
+     forme : `?graine=1234` dans l'URL rejoue exactement la meme partie. Sans
+     parametre, la graine est tiree au hasard, et deux joueurs n'ont plus la
+     meme suite — ce qui rend inutile de se passer les reponses. */
+  var GRAINE = (function(){
+    var m = /[?&]graine=(\d+)/.exec(location.search);
+    return m ? (Number(m[1]) >>> 0) : ((Math.random() * 4294967296) >>> 0);
+  })();
+
+  function des(graine){
+    var e = graine >>> 0;
+    return function(n){
+      e = (e + 0x6D2B79F5) >>> 0;
+      var t = e;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return (((t ^ (t >>> 14)) >>> 0) % n);
+    };
+  }
+
+  function melanger(liste, tirer){
+    var t = liste.slice();
+    for (var i = t.length - 1; i > 0; i--) {
+      var j = tirer(i + 1);
+      var x = t[i]; t[i] = t[j]; t[j] = x;
+    }
+    return t;
+  }
+
+  /* Trois regles, et chacune repare une facon de gagner SANS regarder l'image :
+     - en duel, jamais plus de deux fois le meme cote d'affilee ;
+     - en solo, jamais deux images du meme sujet a la suite (la comparaison
+       donnerait la reponse) ;
+     - en solo, jamais plus de trois fois la meme reponse d'affilee. */
+  function batirDuels(paires, tirer){
+    var out = melanger(paires, tirer).map(function(p){ return { p:p }; });
+    var serie = 0, precedent = null;
+    out.forEach(function(e){
+      var cote = tirer(2) ? "a" : "b";
+      if (cote === precedent) {
+        serie++;
+        if (serie >= 2) { cote = (cote === "a" ? "b" : "a"); serie = 0; }
+      } else { serie = 0; }
+      precedent = cote;
+      e.cote = cote;                       /* cote de l'image GENEREE */
+      e.a = cote === "a" ? e.p.ia : e.p.reel;
+      e.b = cote === "a" ? e.p.reel : e.p.ia;
+      e.aIa = (cote === "a");
+      e.theme = e.p.theme;
+      e.cle = "d" + e.p.id;
+    });
+    return out;
+  }
+
+  /* ⚠️ TROIS facons de rater cet ordre, toutes les trois mesurees sur des
+     centaines de parties simulees, aucune visible en jouant une partie :
+     ① Melanger puis REPARER (version 1) : quand aucun echange ne convient, la
+        boucle ne repare rien et n'en dit rien — 61 series de cinq reponses
+        identiques sur 300 parties.
+     ② Construire en preferant alterner : le glouton epuise l'espece
+        minoritaire et laisse une TRAINE de onze reponses identiques a la fin.
+     ③ Corriger ② avec une borne approchee (« majoritaire <= 3 x minoritaire »)
+        evaluee AVANT le placement : elle se declenche trop tard, et laisse
+        encore des series de six.
+     Ce qu'il faut, c'est tester la faisabilite de CE QUI RESTE apres le coup
+     joue. Avec m images d'une espece on ouvre m+1 intervalles pouvant contenir
+     3 images de l'autre au plus ; si une serie est deja commencee, le premier
+     intervalle est entame d'autant. C'est ce que dit `tenable()`, et c'est
+     exact, pas prudent.
+     ⚠️ Ne pas « equilibrer » a chaque rang : forcer l'espece majoritaire des
+     qu'il y a un ecart produit une alternance PARFAITE, la suite la plus
+     devinable de toutes. Ici les deux especes restent libres tant que les deux
+     laissent une fin possible — la contrainte ne mord qu'au bord. */
+  function tenable(a, b, courant, longueur){
+    var penA = (courant === true) ? longueur : 0;
+    var penB = (courant === false) ? longueur : 0;
+    return a <= 3 * (b + 1) - penA && b <= 3 * (a + 1) - penB;
+  }
+
+  /* La propriete qu'on promet au joueur, ecrite une seule fois et verifiable :
+     jamais deux images du meme sujet a la suite, jamais plus de trois reponses
+     identiques d'affilee. */
+  function conforme(t){
+    var serie = 1;
+    for (var i = 1; i < t.length; i++) {
+      if (t[i].sujet === t[i-1].sujet) return false;
+      serie = (t[i].ia === t[i-1].ia) ? serie + 1 : 1;
+      if (serie > 3) return false;
+    }
+    return true;
+  }
+
+  function batirSolo(paires, tirer){
+    var reste = [];
+    paires.forEach(function(p){
+      reste.push({ p:p, ia:true,  face:p.ia,   theme:p.theme, cle:"s" + p.id + "i",
+                   sujet:p.cle });
+      reste.push({ p:p, ia:false, face:p.reel, theme:p.theme, cle:"s" + p.id + "r",
+                   sujet:p.cle });
+    });
+    reste = melanger(reste, tirer);
+
+    var nIa = 0;
+    reste.forEach(function(c){ if (c.ia) nIa++; });
+    var nRe = reste.length - nIa;
+
+    var out = [], serie = 0, memeQue = null, sujetPrec = null;
+    while (reste.length) {
+      /* Une espece n'est jouable que si la partie reste finissable apres. */
+      var jouable = {};
+      [true, false].forEach(function(esp){
+        var a = nIa - (esp ? 1 : 0), b = nRe - (esp ? 0 : 1);
+        if (a < 0 || b < 0) { jouable[esp] = false; return; }
+        var lg = (esp === memeQue) ? serie + 1 : 1;
+        jouable[esp] = (lg <= 3) && tenable(a, b, esp, lg);
+      });
+
+      var choisi = -1, repli = -1;
+      for (var k = 0; k < reste.length; k++) {
+        var c = reste[k];
+        if (c.sujet === sujetPrec) continue;
+        if (repli < 0) repli = k;
+        if (!jouable[c.ia]) continue;
+        choisi = k; break;
+      }
+      if (choisi < 0) choisi = (repli >= 0 ? repli : 0);
+
+      var e = reste.splice(choisi, 1)[0];
+      if (e.ia) nIa--; else nRe--;
+      serie = (e.ia === memeQue) ? serie + 1 : 1;
+      memeQue = e.ia;
+      sujetPrec = e.sujet;
+      out.push(e);
+    }
+
+    /* Il reste de rares impasses : quand la seule image encore jouable est la
+       partenaire de celle qu'on vient de poser, il n'y a plus de choix du tout
+       et la suite sort en defaut — mesure : 3 rangs sur 200 000, toujours dans
+       les toutes dernieres images.
+       ⚠️ Reparer en RETIRANT puis en reinserant ne marche pas ici, et c'est
+       contre-intuitif : oter l'element fautif peut mettre en contact ses deux
+       voisins, qui sont parfois du meme sujet. La suite n'est alors conforme
+       nulle part, et la reparation renonce en silence — mesure faite, elle
+       laissait passer exactement les memes defauts.
+       On ECHANGE donc deux positions au lieu d'en deplacer une : l'echange ne
+       cree aucun contact nouveau ailleurs. Et on valide la suite ENTIERE apres
+       coup : verifier localement une propriete globale, c'est verifier autre
+       chose. */
+    for (var essais = 0; essais < 6 && !conforme(out); essais++) {
+      var faute = -1, serieR = 1;
+      for (var i = 1; i < out.length && faute < 0; i++) {
+        serieR = (out[i].ia === out[i-1].ia) ? serieR + 1 : 1;
+        if (out[i].sujet === out[i-1].sujet || serieR > 3) faute = i;
+      }
+      if (faute < 0) break;
+      var repare = false;
+      for (var k = 0; k < out.length && !repare; k++) {
+        if (k === faute) continue;
+        var x = out[faute]; out[faute] = out[k]; out[k] = x;
+        if (conforme(out)) { repare = true; break; }
+        x = out[faute]; out[faute] = out[k]; out[k] = x;   /* on defait */
+      }
+      if (!repare) break;
+    }
+    return out;
+  }
+
+  function paquet(){
+    return JEU.paires.filter(function(p){
+      return niveau === "tout" || p.niveau === niveau;
+    });
+  }
+
+  function batirPartie(){
+    var tirer = des(GRAINE);
+    var paires = melanger(paquet(), tirer);
+    if (longueur && longueur < paires.length) paires = paires.slice(0, longueur);
+    partie.duels = batirDuels(paires, tirer);
+    partie.solo  = batirSolo(paires, tirer);
+  }
+
+  function liste(){ return partie[mode]; }
+  function dernier(){ return PREMIER + liste().length - 1; }
+  function bilanPos(){ return dernier() + 1; }
+
+  /* --------------------------------------------------------------- memoire
+     Les reponses sont rangees par IDENTIFIANT de paire, jamais par position :
+     l'ordre changeant a chaque partie, une cle positionnelle attribuerait la
+     reponse d'hier a l'image d'aujourd'hui. */
+  function cle(){ return "iaoupasia2-" + mode + "-" + niveau; }
   function charger(){
     try { reponses = JSON.parse(localStorage.getItem(cle()) || "{}"); }
     catch (e) { reponses = {}; }
@@ -321,36 +553,46 @@
   function sauver(){
     try { localStorage.setItem(cle(), JSON.stringify(reponses)); } catch(e){}
   }
+  function oublier(){
+    reponses = {};
+    try { localStorage.removeItem(cle()); } catch(e){}
+  }
 
-  /* --- préchargement : un direct ne supporte pas une image qui arrive en retard --- */
-  var prets = 0, total = JEU.solo.length;
-  JEU.solo.forEach(function(f){
-    var im = new Image();
-    im.onload = im.onerror = function(){
-      prets++;
-      var t = el("chargement");
-      if (t) t.textContent = prets < total
-        ? "Préparation des images… " + prets + " / " + total
-        : "Les " + total + " images sont en mémoire.";
-    };
-    im.src = f.img;
-  });
+  /* ------------------------------------------------------------ chargement
+     Le lot 1 prechargeait les 200 images au demarrage. A 800 images c'est
+     plusieurs dizaines de mega-octets avant le premier clic : on ne precharge
+     plus que la fenetre autour de la position courante. Une image en retard
+     pendant une animation en direct reste inacceptable, d'ou l'avance de six
+     images plutot que d'une. */
+  var enCache = {};
+  function precharger(depuis){
+    var l = liste();
+    for (var k = depuis; k < Math.min(depuis + 6, l.length); k++) {
+      var e = l[k];
+      var urls = (mode === "duels") ? [e.a.img, e.b.img] : [e.face.img];
+      urls.forEach(function(u){
+        if (enCache[u]) return;
+        enCache[u] = true;
+        var im = new Image(); im.src = u;
+      });
+    }
+  }
 
   function montrer(quoi){ for (var k in ecrans) ecrans[k].hidden = (k !== quoi); }
 
   var REGLES_TEXTE = {
     duels: [["Deux images, une réponse",
-             "À gauche <b>A</b>, à droite <b>B</b>. Une seule des deux est générée : désignez-la."],
+             "À gauche <b>A</b>, à droite <b>B</b>. Une seule des deux est générée : <b>cliquez-la</b>, ou tapez <kbd>1</kbd> / <kbd>2</kbd>."],
             ["Pas de minuteur",
              "Aucune limite de temps. Prenez-en autant que vous voulez avant de répondre."],
-            ["Le côté change",
-             "L'IA n'est pas toujours du même côté, et l'alternance n'a aucun rythme régulier."]],
+            ["L'ordre est tiré au sort",
+             "Le côté de l'image générée et l'ordre des sujets changent à chaque partie."]],
     solo:  [["Une image, un verdict",
              "L'image s'affiche seule, sans rien à quoi la comparer. Générée, ou photographie ?"],
             ["Pas de minuteur",
              "Aucune limite de temps. Prenez-en autant que vous voulez avant de répondre."],
             ["Moitié-moitié",
-             "Cent images générées et cent photographies exactement, dans un ordre irrégulier."]]
+             "Autant d'images générées que de photographies, dans un ordre tiré au sort."]]
   };
   function poserRegles(){
     el("cartes-regles").innerHTML = REGLES_TEXTE[mode].map(function(c){
@@ -359,18 +601,19 @@
   }
 
   function choisirMode(m){
-    mode = m; charger();
+    mode = m; batirPartie(); charger();
     el("mode-tag").textContent = (m === "duels" ? "Duel" : "Solo");
     el("pos-t").textContent = liste().length;
     el("vignettes").innerHTML = "";
     poserRegles();
+    precharger(0);
     pos = REGLES; revele = false; rendre();
   }
 
   function compter(){
     var bon = 0, faux = 0;
     liste().forEach(function(d){
-      var r = reponses[d.n];
+      var r = reponses[d.cle];
       if (r === undefined) return;
       if (r) bon++; else faux++;
     });
@@ -379,7 +622,7 @@
 
   /* --- la bonne réponse, exprimée comme le numéro du bouton (1 ou 2) --- */
   function bonBouton(d){
-    return (mode === "duels") ? (d.a.ia ? 1 : 2) : (d.ia ? 1 : 2);
+    return (mode === "duels") ? (d.aIa ? 1 : 2) : (d.ia ? 1 : 2);
   }
 
   function rendre(){
@@ -389,31 +632,35 @@
 
     montrer("jeu");
     var duel = (mode === "duels");
-    var d = liste()[pos - PREMIER];
-    el("scene").className = duel ? "" : "solo";
+    var rang = pos - PREMIER;
+    var d = liste()[rang];
+    precharger(rang);
+    el("scene").className = (duel ? "" : "solo") + (duel && !revele ? " repondable" : "");
     el("cote-b").hidden = !duel;
-    el("theme").textContent = d.theme;
-    el("pos-n").textContent = d.n;
-    el("jauge").style.width = (d.n / liste().length * 100) + "%";
+    el("theme").textContent = duel ? d.theme : (revele ? d.theme : "");
+    el("pos-n").textContent = rang + 1;
+    el("jauge").style.width = ((rang + 1) / liste().length * 100) + "%";
 
     var c = compter();
     el("score").innerHTML = c.total
       ? "<b>" + c.bon + "</b> / " + c.total
       : '<span style="color:#5c6470">pas encore de réponse</span>';
 
-    var faces = duel ? { a:d.a, b:d.b } : { a:d };
+    var faces = duel ? { a:d.a, b:d.b } : { a:d.face };
+    var estIa = duel ? { a:d.aIa, b:!d.aIa } : { a:d.ia };
     ["a","b"].forEach(function(k){
       var face = faces[k];
       if (!face) return;
+      var ia = estIa[k];
       el("img-" + k).src = face.img;
-      el("img-" + k).alt = revele ? (face.ia ? "Image générée" : "Photographie") : "";
+      el("img-" + k).alt = revele ? (ia ? "Image générée" : "Photographie") : "";
       el("cote-" + k).className =
-        "cote" + (revele ? " montre " + (face.ia ? "ia" : "reel") : "");
+        "cote" + (revele ? " montre " + (ia ? "ia" : "reel") : "");
       el("badge-" + k).textContent =
-        revele ? (face.ia ? "GÉNÉRÉE PAR IA" : "VRAIE PHOTO") : "";
+        revele ? (ia ? "GÉNÉRÉE PAR IA" : "VRAIE PHOTO") : "";
       var cr = el("credit-" + k);
       if (!revele) cr.textContent = "";
-      else if (face.ia) cr.textContent = "Z-Image Turbo, généré en local";
+      else if (ia) cr.textContent = "Z-Image Turbo, généré en local";
       else cr.textContent = face.auteur + " · " + face.licence + " · Wikimedia Commons";
     });
 
@@ -424,7 +671,7 @@
                                  : 'Vraie photo <span class="t">2</span>';
     el("rep-1").disabled = el("rep-2").disabled = revele;
 
-    var v = el("verdict"), rep = reponses[d.n];
+    var v = el("verdict"), rep = reponses[d.cle];
     if (!revele) {
       v.className = ""; v.textContent = "";
       el("suite").innerHTML = "<kbd>Espace</kbd> révéler sans répondre";
@@ -450,7 +697,7 @@
   function repondre(bouton){
     if (pos < PREMIER || pos > dernier() || revele) return;
     var d = liste()[pos - PREMIER];
-    reponses[d.n] = (bouton === bonBouton(d));
+    reponses[d.cle] = (bouton === bonBouton(d));
     sauver();
     revele = true;
     rendre();
@@ -476,24 +723,31 @@
       : taux >= 0.55 ? "Vous êtes à peine au-dessus du hasard : la frontière est presque effacée."
       : "Le hasard pur donnerait 50 %. En dessous, c'est que les repères habituels trompent.";
 
-    /* Le classement ne prend QUE le mode solo : duel et solo n'ont pas le même
-       nombre d'images ni la même difficulté, les mélanger dans une seule table
-       rendrait le rang illisible. C'est dit au joueur plutôt que subi. */
+    /* Le classement ne prend QUE le mode solo, et seulement quand la partie
+       porte sur TOUT le jeu : un score obtenu sur vingt-cinq images choisies au
+       hasard n'est pas comparable a un score sur huit cents. Melanger les deux
+       dans une seule table rendrait le rang absurde. */
+    var comparable = (mode === "solo" && niveau === "tout" && !longueur);
     if (c.total && mode === "solo" && accorde("classement")) {
       var boite = el("classement");
       boite.hidden = false;
-      boite.textContent = "Envoi du score…";
-      Promise.resolve(atlas.soumettreScore(c.bon,
-          c.total + " images jugées"))
-        .then(function(){ return atlas.classement(10); })
-        .then(function(tab){
-          var l = (tab && tab.scores) || tab || [];
-          boite.innerHTML = "<b>Meilleurs yeux — mode solo</b><ol>" + l.map(function(e){
-            return "<li>" + ((e.pseudo || e.nom || "anonyme") + " — " +
-                             (e.score != null ? e.score : e.valeur)) + "</li>";
-          }).join("") + "</ol>";
-        })
-        .catch(function(){ boite.textContent = "Classement indisponible pour le moment."; });
+      if (!comparable) {
+        boite.innerHTML = "<b>Hors classement</b><p style=\"margin:6px 0 0\">" +
+          "Le classement ne prend que les parties complètes en mode solo, " +
+          "tous niveaux confondus — sinon les scores ne se comparent pas.</p>";
+      } else {
+        boite.textContent = "Envoi du score…";
+        Promise.resolve(atlas.soumettreScore(c.bon, c.total + " images jugées"))
+          .then(function(){ return atlas.classement(10); })
+          .then(function(tab){
+            var l = (tab && tab.scores) || tab || [];
+            boite.innerHTML = "<b>Meilleurs yeux — mode solo</b><ol>" + l.map(function(e){
+              return "<li>" + ((e.pseudo || e.nom || "anonyme") + " — " +
+                               (e.score != null ? e.score : e.valeur)) + "</li>";
+            }).join("") + "</ol>";
+          })
+          .catch(function(){ boite.textContent = "Classement indisponible pour le moment."; });
+      }
     }
   }
 
@@ -506,7 +760,7 @@
     if (pos >= PREMIER && pos <= dernier() && revele) { revele = false; rendre(); return; }
     if (pos > REGLES) { pos--; revele = false; rendre(); }
   }
-  function allerA(n){ pos = PREMIER + n - 1; revele = false; fermerGrille(); rendre(); }
+  function allerA(rang){ pos = PREMIER + rang; revele = false; fermerGrille(); rendre(); }
 
   var creditsOuverts = false;
   function basculerCredits(){
@@ -515,9 +769,13 @@
     }
     var boite = el("credits");
     if (!boite.childElementCount) {
-      var lignes = JEU.duels.map(function(e){
-        var f = e.a.ia ? e.b : e.a;          // la face photographique du duel
-        return "<tr><td>" + e.n + "</td><td>" + f.theme + "</td><td>" + f.auteur +
+      /* Les credits portent sur TOUTES les photographies du jeu, pas sur celles
+         de la partie en cours : une licence CC BY oblige a l'attribution de ce
+         qu'on redistribue, et l'archive contient les huit cents images quelle
+         que soit la partie jouee. */
+      var lignes = JEU.paires.map(function(p){
+        var f = p.reel;
+        return "<tr><td>" + p.id + "</td><td>" + p.theme + "</td><td>" + f.auteur +
                '</td><td class="lic">' + f.licence + "</td><td>" +
                (f.url ? '<a href="' + f.url + '" target="_blank" rel="noopener">Commons</a>'
                       : "—") + "</td></tr>";
@@ -533,19 +791,19 @@
     if (grilleOuverte) { fermerGrille(); return; }
     var c = el("vignettes");
     if (!c.childElementCount) {
-      liste().forEach(function(d){
+      liste().forEach(function(d, i){
         var v = document.createElement("div");
-        v.className = "vig"; v.dataset.n = d.n;
-        v.innerHTML = '<img src="' + (mode === "duels" ? d.a.img : d.img) +
-                      '" alt="" loading="lazy"><span class="num">' + d.n + '</span>';
-        v.addEventListener("click", function(){ allerA(d.n); });
+        v.className = "vig"; v.dataset.rang = i;
+        v.innerHTML = '<img src="' + (mode === "duels" ? d.a.img : d.face.img) +
+                      '" alt="" loading="lazy"><span class="num">' + (i + 1) + '</span>';
+        v.addEventListener("click", function(){ allerA(i); });
         c.appendChild(v);
       });
     }
-    var ici = (pos >= PREMIER && pos <= dernier()) ? liste()[pos - PREMIER].n : 0;
+    var ici = (pos >= PREMIER && pos <= dernier()) ? pos - PREMIER : -1;
     Array.prototype.forEach.call(c.children, function(v){
-      var n = Number(v.dataset.n), r = reponses[n];
-      v.className = "vig" + (n < ici ? " vu" : "") + (n === ici ? " ici" : "") +
+      var i = Number(v.dataset.rang), r = reponses[liste()[i].cle];
+      v.className = "vig" + (i < ici ? " vu" : "") + (i === ici ? " ici" : "") +
                     (r === true ? " bon" : r === false ? " faux" : "");
     });
     el("grille").hidden = false; grilleOuverte = true;
@@ -595,6 +853,19 @@
     e.preventDefault();
   });
 
+  /* Cliquer une IMAGE repond, en duel : c'est le geste naturel — on designe
+     celle qu'on accuse, on ne cherche pas un bouton en bas de l'ecran. Les
+     boutons restent, pour le clavier, pour le tactile et pour le mode solo ou
+     l'image ne porte aucune reponse (une seule image, deux verdicts possibles).
+     Apres la revelation, un clic n'accuse plus rien : il avance, comme avant. */
+  ["a", "b"].forEach(function(k, i){
+    el("cote-" + k).addEventListener("click", function(e){
+      var enJeu = (pos >= PREMIER && pos <= dernier());
+      if (mode !== "duels" || !enJeu || revele) return;   /* on laisse avancer */
+      e.stopPropagation();
+      repondre(i + 1);
+    });
+  });
   el("scene").addEventListener("click", avancer);
   ecrans.regles.addEventListener("click", avancer);
   el("mode-duel").addEventListener("click", function(){ choisirMode("duels"); });
@@ -608,8 +879,61 @@
   el("lien-credits").addEventListener("click", function(e){
     e.preventDefault(); e.stopPropagation(); basculerCredits();
   });
-  el("nb-duels").textContent = JEU.duels.length + " duels.";
-  el("nb-solo").textContent  = JEU.solo.length + " images.";
+  el("lien-oublier").addEventListener("click", function(e){
+    e.preventDefault(); e.stopPropagation();
+    ["duels","solo"].forEach(function(m){
+      ["tout","standard","expert"].forEach(function(n){
+        try { localStorage.removeItem("iaoupasia2-" + m + "-" + n); } catch(err){}
+      });
+    });
+    reponses = {};
+    el("lien-oublier").textContent = "Scores effacés";
+    compterAffiche();
+  });
+
+  /* --- choix du niveau et de la longueur, sur l'accueil --- */
+  function groupe(id, poser){
+    var boite = el(id);
+    boite.addEventListener("click", function(e){
+      var b = e.target.closest("button[data-v]");
+      if (!b) return;
+      e.stopPropagation();
+      poser(b.dataset.v);
+      Array.prototype.forEach.call(boite.children, function(x){
+        x.className = "opt" + (x === b ? " actif" : "");
+      });
+      compterAffiche();
+    });
+  }
+  groupe("choix-niveau", function(v){ niveau = v; });
+  groupe("choix-longueur", function(v){ longueur = Number(v); });
+
+  function compterAffiche(){
+    var n = paquet().length;
+    var pris = (longueur && longueur < n) ? longueur : n;
+    el("nb-duels").textContent = pris + (pris > 1 ? " duels." : " duel.");
+    el("nb-solo").textContent  = (pris * 2) + " images.";
+    var dispo = { standard:0, expert:0 };
+    JEU.paires.forEach(function(p){ dispo[p.niveau] = (dispo[p.niveau] || 0) + 1; });
+    el("stock").textContent =
+      JEU.paires.length + " sujets en tout — " + (dispo.standard || 0) +
+      " standard, " + (dispo.expert || 0) + " expert.";
+    /* Le nombre est LU dans les donnees, jamais ecrit dans la page : un theme
+       dont la photographie manque est ecarte a la construction, et un chiffre
+       en dur deviendrait faux sans que rien ne le dise. */
+    el("nb-total").textContent = (JEU.paires.length * 2);
+  }
+
+  /* Surface de controle exposee volontairement : elle sert au banc d'essai qui
+     verifie les trois regles d'ordre (pas plus de deux fois le meme cote, pas
+     deux images du meme sujet a la suite, pas quatre memes reponses d'affilee).
+     Sans elle ces regles ne se verifient qu'a l'oeil, sur une partie a la fois
+     — c'est-a-dire jamais. Elle ne lit ni n'ecrit aucun etat du jeu. */
+  window.__ordre = { des:des, melanger:melanger,
+                     batirDuels:batirDuels, batirSolo:batirSolo };
+
+  compterAffiche();
+  batirPartie();
   charger();
   rendre();
 })();
