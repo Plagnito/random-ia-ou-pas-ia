@@ -474,11 +474,12 @@
     <!-- Le multijoueur se replie aussi : il ne concerne que ceux qui jouent a
          plusieurs, et son pave encadre ecrasait les deux modes. -->
     <details class="repli" id="bloc-multi" hidden>
-      <summary>Jouer à plusieurs <span class="resume">salon, QR, classement</span></summary>
+      <summary>Jouer à plusieurs <span class="resume">créer, ou entrer un code</span></summary>
       <div class="multi">
-        <p id="multi-texte">Créez une partie&nbsp;: vos invités scannent un QR ou
-          suivent un lien, jouent la même suite d'images que vous, et le classement
-          récompense la <b>rapidité</b> — mais seulement sur les bonnes réponses.</p>
+        <p id="multi-texte">Créez une partie&nbsp;: vos invités scannent un QR,
+          suivent un lien ou <b>tapent le code</b>, jouent la même suite d'images que
+          vous, et le classement récompense la <b>rapidité</b> — mais seulement sur
+          les bonnes réponses.</p>
         <div class="rangee" id="rangee-temps">
           <span class="etiq">Chrono</span>
           <div class="opts" id="choix-temps">
@@ -489,6 +490,18 @@
           </div>
         </div>
         <button class="bt" id="bt-creer" type="button">Créer une partie</button>
+
+        <!-- Rejoindre SANS lien. Le salon donne un code lisible a l'oral (ni I,
+             ni O, ni 0, ni 1, justement pour qu'on puisse le dicter) : il lui
+             fallait un endroit ou le taper. -->
+        <div class="rangee" id="rangee-code">
+          <span class="etiq">Un code&nbsp;?</span>
+          <input class="champ" id="code-partie" maxlength="60" autocomplete="off"
+                 spellcheck="false" autocapitalize="characters"
+                 placeholder="Le code, ou le lien reçu">
+          <button class="bt sobre" id="bt-rejoindre-code" type="button">Rejoindre</button>
+        </div>
+        <p class="attente" id="code-erreur"></p>
       </div>
     </details>
 
@@ -1917,6 +1930,60 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
         }
       } catch (e) { /* */ }
       prompt("Lien :", texte);
+    });
+
+    /* ── Rejoindre en TAPANT le code ────────────────────────────────────
+       L'alphabet des codes est `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (source :
+       `codePartie()` dans randomarbitre.js) : ni I, ni O, ni 0, ni 1, parce
+       qu'ils se confondent quand on dicte. Ce detail se retourne en AIDE — un
+       code qui contient l'un des quatre est forcement une faute de saisie, et
+       on peut le DIRE au lieu de rendre « partie inconnue ». */
+    var ALPHA_PARTIE = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/;
+    function codeSaisi(brut){
+      var t = String(brut == null ? "" : brut).trim();
+      /* On accepte le LIEN colle tel quel : c'est ce qu'on recoit par message,
+         et exiger d'en extraire huit caracteres a la main serait une corvee. */
+      var m = /[?&]partie=([^&#\s]+)/i.exec(t);
+      if (m) { try { t = decodeURIComponent(m[1]); } catch (e) { t = m[1]; } }
+      return t.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    }
+    function rejoindreParCode(){
+      var err = el("code-erreur");
+      var code = codeSaisi(el("code-partie").value);
+      err.style.color = "var(--ia)";
+      if (!code) { err.textContent = "Entrez le code de la partie, ou collez le lien reçu."; return; }
+      if (/[IO01]/.test(code)) {
+        err.textContent = "Un code ne contient jamais I, O, 0 ni 1 — ces quatre-là "
+          + "sont écartés exprès. Vérifiez ces caractères.";
+        return;
+      }
+      if (!ALPHA_PARTIE.test(code)) {
+        err.textContent = "Un code de partie fait huit lettres et chiffres (vous en avez "
+          + code.length + ").";
+        return;
+      }
+      err.style.color = "var(--doux)";
+      err.textContent = "Recherche de la partie…";
+      Promise.resolve(atlas.partie.etat(code)).then(function(e){
+        if (e && e.ok) { PARTIE = { code: code }; err.textContent = ""; appliquerPartie(e); return; }
+        /* ⚠️ On ne devine PAS la cause du refus. « Partie inconnue » et « tu
+           n'es pas encore membre » arrivent tous deux en `ok:false`, et les
+           separer sur le TEXTE du message casserait au premier reformulage
+           cote serveur. On passe donc par l'ecran d'invitation, qui demande un
+           nom puis affiche l'erreur EXACTE du serveur si le code n'existe pas. */
+        err.textContent = "";
+        PARTIE = { code: code };
+        el("invite-code").textContent = code;
+        el("invite-erreur").textContent = "";
+        montrer("invite");
+      }).catch(function(){
+        err.style.color = "var(--ia)";
+        err.textContent = "Le serveur n'a pas répondu. Réessayez dans un instant.";
+      });
+    }
+    el("bt-rejoindre-code").addEventListener("click", rejoindreParCode);
+    el("code-partie").addEventListener("keydown", function(e){
+      if (e.key === "Enter") { e.preventDefault(); rejoindreParCode(); }
     });
 
     /* Arrive-t-on par un lien d'invitation ? La coquille le sait sans reseau. */
