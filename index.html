@@ -309,13 +309,17 @@
     color:var(--ia)}
   #succes-flash span{font-size:15px;font-weight:700}
 
-  /* ================= TELEPHONE : l'image est le jeu =================
+  /* ============ TELEPHONE ET TABLETTE : degraisser le chrome ============
      🔴 MESURE du 08/09/2026, ecran de 375x812, en duel : l'image ne faisait
      que 298x196. Le coupable n'etait pas le manque de place, c'etait le vide —
      `.badge` (46 px) et `.credit` (16 px) sont en FLUX et reservent leur hauteur
      meme quand ils ne contiennent rien, soit ~86 px voles PAR COTE avant meme
-     d'avoir repondu. On les met en surimpression ; l'image passe a ~367x239,
-     +50 % de surface. */
+     d'avoir repondu.
+
+     ⚠️ Ce bloc-ci ne traite que le CHROME (outils, pied, mentions clavier) et
+     le met au regime. La GEOMETRIE de l'image — surimpression du badge, du
+     credit et de la lettre, `width:100%` — est dans le bloc `max-width:560px`
+     plus bas, et le seuil separe est deliberé : voir son commentaire. */
   @media (max-width:900px){
     .modes,.cartes{grid-template-columns:1fr}
 
