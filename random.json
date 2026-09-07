@@ -9,6 +9,11 @@
     "observation",
     "quiz"
   ],
+  "cache": {
+    "immuable": [
+      "images/w/"
+    ]
+  },
   "capacites": {
     "progression": true,
     "identite": true,
@@ -16,6 +21,11 @@
       "sens": "desc",
       "unite": "images reconnues",
       "titre": "Les meilleurs yeux (mode solo)"
+    },
+    "partie": {
+      "temps": 30,
+      "manches": 100,
+      "joueurs": 12
     },
     "succes": [
       {
@@ -72,6 +82,21 @@
         "id": "solo-100",
         "titre": "Sans comparaison",
         "texte": "Reconnaître 100 images en mode solo, sans point de comparaison."
+      },
+      {
+        "id": "multi-gagnee",
+        "titre": "Premier de la partie",
+        "texte": "Finir premier d'une partie partagée, à au moins deux joueurs."
+      },
+      {
+        "id": "multi-jouee",
+        "titre": "À plusieurs",
+        "texte": "Terminer une partie partagée, quelle que soit la place."
+      },
+      {
+        "id": "multi-eclair",
+        "titre": "Le réflexe",
+        "texte": "Répondre juste en moins de deux secondes dans une partie partagée."
       },
       {
         "id": "revenant",
