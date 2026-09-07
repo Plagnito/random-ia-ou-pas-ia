@@ -25,16 +25,23 @@
   #app{height:100vh;display:flex;flex-direction:column}
 
   /* ---------- barre ---------- */
-  #barre{flex:0 0 auto;height:54px;display:flex;align-items:center;gap:18px;
-    padding:0 24px;border-bottom:1px solid var(--trait);background:var(--fond2)}
-  .marque{font-weight:800;font-size:15px;letter-spacing:.4px;white-space:nowrap}
-  .marque span{color:var(--ia)}
+  #barre{flex:0 0 auto;height:54px;display:flex;align-items:center;gap:14px;
+    padding:0 18px;border-bottom:1px solid var(--trait);background:var(--fond2)}
+  /* ⚠️ `min-width:0` sur le THEME, sinon un titre long pousse tout le reste hors
+     de l'ecran au lieu de se tronquer : un enfant de flex refuse de descendre
+     sous sa largeur de contenu tant qu'on ne l'y autorise pas. */
+  #theme{flex:1 1 auto;min-width:0}
+  /* Les outils s'effacent : ils sont la pour etre trouves, pas pour etre vus. */
+  .outils{margin-left:auto}
+  .outil{border-color:transparent;background:transparent;color:#6b7480}
+  .outil:hover{border-color:var(--trait);background:#171a21;color:var(--texte)}
   #mode-tag{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
     color:var(--doux);border:1px solid var(--trait);border-radius:20px;padding:3px 11px;
     white-space:nowrap;cursor:pointer}
   #theme{font-size:22px;font-weight:800;letter-spacing:-.3px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #compte{margin-left:auto;display:flex;align-items:center;gap:16px;white-space:nowrap}
+  #compte{display:flex;align-items:center;gap:14px;white-space:nowrap;
+    padding-left:14px;border-left:1px solid var(--trait)}
   #score{font-size:15px;font-weight:700;color:var(--doux);font-variant-numeric:tabular-nums}
   #score b{color:var(--reel);font-size:19px}
   #pos{font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:var(--doux)}
@@ -209,6 +216,26 @@
     min-width:220px}
   .code{font-family:var(--mono,ui-monospace,Menlo,Consolas,monospace);
     letter-spacing:2px;font-weight:800;color:var(--texte)}
+  /* ---- replis : ce qui sert une fois sur dix ne prend pas la place ---- */
+  /* ⚠️ `hidden` d'abord : une regle de classe qui fixe `display` l'emporte sur
+     le `display:none` du navigateur. Exactement le defaut du bandeau
+     d'invitation ce matin, qui s'affichait vide sur toutes les pieces. */
+  .repli[hidden]{display:none}
+  .repli{width:100%;max-width:640px;margin:0 auto 12px;border:1px solid var(--trait);
+    border-radius:12px;background:#12151b;text-align:left}
+  .repli summary{cursor:pointer;padding:11px 16px;font-size:13px;font-weight:800;
+    letter-spacing:1.4px;text-transform:uppercase;color:var(--doux);
+    display:flex;align-items:center;gap:10px;list-style:none}
+  .repli summary::-webkit-details-marker{display:none}
+  .repli summary::before{content:"▸";font-size:11px;color:var(--trait2,#4a5262);
+    transition:transform .15s}
+  .repli[open] summary::before{transform:rotate(90deg)}
+  .repli summary:hover{color:var(--texte)}
+  .repli .resume{margin-left:auto;font-weight:600;letter-spacing:0;
+    text-transform:none;font-size:13px;color:#6b7480}
+  .repli > div{padding:2px 16px 16px}
+  .repli .reglages,.repli .multi{margin:0;border:0;background:transparent;padding:0}
+
   /* ---- barre d'outils : tout ce qui agit a un bouton ---- */
   .outils{display:flex;gap:6px;align-items:center}
   .outil{width:34px;height:30px;border-radius:8px;border:1px solid var(--trait);
@@ -285,7 +312,11 @@
   @media (max-width:900px){
     #scene{flex-direction:column;gap:10px}
     .modes,.cartes{grid-template-columns:1fr}
+    /* ⚠️ Sur telephone, c'est le THEME qui s'efface, pas les outils : un nom de
+       sujet est agreable, un bouton hors de portee est une fonction perdue. */
     #theme{display:none}
+    #barre{gap:8px;padding:0 10px}
+    .outils{gap:4px}
     #pied{flex-wrap:wrap;min-height:auto}
     #question{font-size:16px}
   }
@@ -302,54 +333,6 @@
       carte graphique ordinaire. L'autre moitié est une vraie photographie, prise
       par quelqu'un, quelque part. Saurez-vous encore faire la différence&nbsp;?
     </p>
-    <div class="reglages">
-      <div class="rangee">
-        <span class="etiq">Niveau</span>
-        <div class="opts" id="choix-niveau">
-          <button class="opt actif" type="button" data-v="tout">Tout</button>
-          <button class="opt" type="button" data-v="standard">Standard</button>
-          <button class="opt" type="button" data-v="expert">Expert</button>
-        </div>
-      </div>
-      <div class="rangee">
-        <span class="etiq">Longueur</span>
-        <div class="opts" id="choix-longueur">
-          <button class="opt" type="button" data-v="20">20</button>
-          <button class="opt" type="button" data-v="50">50</button>
-          <button class="opt actif" type="button" data-v="100">100</button>
-          <button class="opt" type="button" data-v="0">Tout</button>
-        </div>
-      </div>
-      <div class="rangee" id="rangee-appariement">
-        <span class="etiq">Duel</span>
-        <div class="opts" id="choix-appariement">
-          <button class="opt actif" type="button" data-v="meme">Même sujet</button>
-          <button class="opt" type="button" data-v="melange">Sujets différents</button>
-        </div>
-      </div>
-      <p class="stock" id="stock"></p>
-    </div>
-    <div class="multi" id="bloc-multi" hidden>
-      <h3>Jouer à plusieurs</h3>
-      <p id="multi-texte">Créez une partie&nbsp;: un lien d'invitation apparaît en haut
-        de la page et y reste. Vos invités jouent la même suite d'images que vous, et
-        le classement récompense la <b>rapidité</b> — mais seulement sur les bonnes
-        réponses.</p>
-      <div class="rangee" id="rangee-temps">
-        <span class="etiq">Chrono</span>
-        <div class="opts" id="choix-temps">
-          <button class="opt" type="button" data-v="5">5 s</button>
-          <button class="opt actif" type="button" data-v="10">10 s</button>
-          <button class="opt" type="button" data-v="15">15 s</button>
-          <button class="opt" type="button" data-v="30">30 s</button>
-        </div>
-      </div>
-      <p style="font-size:13px">Une réponse instantanée vaut 100 points, une réponse
-        au bout du chrono en vaut 0. Le temps est compté par le serveur, à partir du
-        moment où l'image s'affiche.</p>
-      <button class="bt" id="bt-creer" type="button">Créer une partie</button>
-    </div>
-
     <div class="modes">
       <button class="mode" id="mode-duel" type="button">
         <div class="num">Touche 1</div>
@@ -365,12 +348,65 @@
           <b style="color:var(--texte)" id="nb-solo">…</b></span>
       </button>
     </div>
+
+    <!-- Les reglages passent APRES les modes et se replient : ils servent une
+         fois sur dix, les modes a chaque partie. -->
+    <details class="repli" id="repli-reglages">
+      <summary>Réglages <span class="resume" id="resume-reglages"></span></summary>
+      <div class="reglages">
+        <div class="rangee">
+          <span class="etiq">Niveau</span>
+          <div class="opts" id="choix-niveau">
+            <button class="opt actif" type="button" data-v="tout">Tout</button>
+            <button class="opt" type="button" data-v="standard">Standard</button>
+            <button class="opt" type="button" data-v="expert">Expert</button>
+          </div>
+        </div>
+        <div class="rangee">
+          <span class="etiq">Longueur</span>
+          <div class="opts" id="choix-longueur">
+            <button class="opt" type="button" data-v="20">20</button>
+            <button class="opt" type="button" data-v="50">50</button>
+            <button class="opt actif" type="button" data-v="100">100</button>
+            <button class="opt" type="button" data-v="0">Tout</button>
+          </div>
+        </div>
+        <div class="rangee" id="rangee-appariement">
+          <span class="etiq">Duel</span>
+          <div class="opts" id="choix-appariement">
+            <button class="opt actif" type="button" data-v="meme">Même sujet</button>
+            <button class="opt" type="button" data-v="melange">Sujets différents</button>
+          </div>
+        </div>
+        <p class="stock" id="stock"></p>
+      </div>
+    </details>
+
+    <!-- Le multijoueur se replie aussi : il ne concerne que ceux qui jouent a
+         plusieurs, et son pave encadre ecrasait les deux modes. -->
+    <details class="repli" id="bloc-multi" hidden>
+      <summary>Jouer à plusieurs <span class="resume">salon, QR, classement</span></summary>
+      <div class="multi">
+        <p id="multi-texte">Créez une partie&nbsp;: vos invités scannent un QR ou
+          suivent un lien, jouent la même suite d'images que vous, et le classement
+          récompense la <b>rapidité</b> — mais seulement sur les bonnes réponses.</p>
+        <div class="rangee" id="rangee-temps">
+          <span class="etiq">Chrono</span>
+          <div class="opts" id="choix-temps">
+            <button class="opt" type="button" data-v="5">5 s</button>
+            <button class="opt actif" type="button" data-v="10">10 s</button>
+            <button class="opt" type="button" data-v="15">15 s</button>
+            <button class="opt" type="button" data-v="30">30 s</button>
+          </div>
+        </div>
+        <button class="bt" id="bt-creer" type="button">Créer une partie</button>
+      </div>
+    </details>
+
     <p class="depart">Cliquez un mode, ou tapez <kbd>1</kbd> / <kbd>2</kbd>.
       <button type="button" class="lien" id="lien-credits">Crédits et licences</button>
       <button type="button" class="lien" id="lien-oublier">Effacer mes scores</button></p>
-    <p id="chargement" style="font-size:14px;color:#6b7480">
-      L'ordre change à chaque partie. Pour rejouer exactement la même,
-      ajoutez <code>?graine=1234</code> à l'adresse.</p>
+    <p id="chargement" style="font-size:14px;color:#6b7480"></p>
   </div>
 </div>
 
@@ -440,8 +476,7 @@
 <!-- ============ JEU ============ -->
 <div id="app" hidden>
   <div id="barre">
-    <div class="marque">IA ou <span>pas IA</span> ?</div>
-    <div id="mode-tag">Duel</div>
+    <div id="mode-tag" title="Revenir à l'accueil">Duel</div>
     <div id="theme"></div>
     <div class="outils">
       <button class="outil" id="o-prec" type="button" title="Image précédente" aria-label="Image précédente">‹</button>
@@ -454,6 +489,7 @@
       <div id="score"></div>
       <div id="pos"><b id="pos-n">1</b> / <span id="pos-t">100</span></div>
     </div>
+
   </div>
   <div id="jauge" style="width:0"></div>
   <div id="chrono" hidden></div>
@@ -1492,6 +1528,16 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
        dont la photographie manque est ecarte a la construction, et un chiffre
        en dur deviendrait faux sans que rien ne le dise. */
     el("nb-total").textContent = (JEU.paires.length * 2);
+
+    /* ⚠️ Un repli qui ne dit pas ce qu'il contient oblige a l'ouvrir pour
+       savoir — c'est-a-dire qu'il ne replie rien. Le resume porte donc l'etat
+       courant : on lit le reglage sans deplier. */
+    var r = el("resume-reglages");
+    if (r) {
+      var lbl = { tout:"tous niveaux", standard:"standard", expert:"expert" };
+      r.textContent = lbl[niveau] + " · " + (longueur ? longueur + " images" : "tout")
+        + (appariement === "melange" ? " · sujets différents" : "");
+    }
   }
 
   /* ========================================================================
