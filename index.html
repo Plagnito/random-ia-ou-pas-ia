@@ -309,16 +309,101 @@
     color:var(--ia)}
   #succes-flash span{font-size:15px;font-weight:700}
 
+  /* ================= TELEPHONE : l'image est le jeu =================
+     🔴 MESURE du 08/09/2026, ecran de 375x812, en duel : l'image ne faisait
+     que 298x196. Le coupable n'etait pas le manque de place, c'etait le vide —
+     `.badge` (46 px) et `.credit` (16 px) sont en FLUX et reservent leur hauteur
+     meme quand ils ne contiennent rien, soit ~86 px voles PAR COTE avant meme
+     d'avoir repondu. On les met en surimpression ; l'image passe a ~367x239,
+     +50 % de surface. */
   @media (max-width:900px){
-    #scene{flex-direction:column;gap:10px}
     .modes,.cartes{grid-template-columns:1fr}
-    /* ⚠️ Sur telephone, c'est le THEME qui s'efface, pas les outils : un nom de
-       sujet est agreable, un bouton hors de portee est une fonction perdue. */
-    #theme{display:none}
-    #barre{gap:8px;padding:0 10px}
-    .outils{gap:4px}
-    #pied{flex-wrap:wrap;min-height:auto}
-    #question{font-size:16px}
+
+    /* --- la barre : plus un seul bouton, rien que ce qui se lit --- */
+    /* ⚠️ Ceci ANNULE la regle inverse ecrite plus tot le meme jour (« c'est le
+       theme qui s'efface, pas les outils »). Elle raisonnait a l'ecran large :
+       sur un telephone, defiler la grille ou passer en plein ecran n'a pas de
+       sens, et l'etiquette de mode ramene deja a l'accueil. */
+    .outils{display:none}
+    #barre{gap:10px;padding:0 12px;height:46px}
+    #theme{font-size:14px}
+    #compte{gap:10px;padding-left:10px;font-size:13px}
+    /* Une phrase de 21 caracteres pour dire « rien » tronquait le theme, qui
+       est le seul texte qu'on lit vraiment en jouant. */
+    #score .vide{display:none}
+
+    /* --- la scene : tout l'espace, et rien que l'image --- */
+    #scene{flex-direction:column;gap:6px;padding:6px 8px}
+    /* Le chrome en flux au regime : il coutait 111 px de hauteur par cote. */
+    .cote{gap:4px}
+    .lettre{font-size:17px;height:18px}
+    .badge{height:34px;font-size:16px}
+    .credit{height:15px;font-size:11px}
+
+    /* --- le pied : absent en duel, indispensable en solo --- */
+    /* En DUEL on repond en touchant l'image : les deux boutons ne font que
+       repeter un geste qui existe deja, en volant 102 px aux images. Ils ne
+       reviennent qu'apres la reponse, reduits au verdict. */
+    #pied.duel{display:none}
+    #pied.duel.revele{display:flex;justify-content:center;
+      min-height:auto;padding:6px 12px}
+    #pied.duel #question,#pied.duel #reponses,#pied.duel #suite{display:none}
+    /* En SOLO ils restent : une image seule ne porte aucune reponse (deux
+       verdicts sont possibles), sans eux le mode est injouable. */
+    #pied.solo{flex-wrap:wrap;justify-content:center;gap:10px;
+      min-height:auto;padding:8px 10px}
+    #pied.solo #question,#pied.solo #suite{display:none}
+    #pied.solo.revele #reponses{display:none}
+    #verdict{font-size:16px;text-align:center}
+    .rep{padding:10px 18px;font-size:16px}
+
+    /* « TOUCHE 1 » ne veut rien dire sans clavier. */
+    .mode .num{display:none}
+    /* ⚠️ L'annonce de succes tombait en plein milieu de l'image du haut
+       (`top:70px`, a droite) : sur telephone elle passe en bandeau fin sous la
+       barre. Elle reste fugitive, mais elle ne cache plus ce qu'on regarde. */
+    #succes-flash{left:8px;right:8px;top:52px;max-width:none;
+      flex-direction:row;align-items:baseline;gap:9px;padding:7px 12px}
+  }
+
+  /* ============ ECRAN ETROIT : l'image prend TOUTE la largeur ============
+     ⚠️ SEUIL SEPARE, et c'est le point important : a 560 px le cadre est
+     forcement plus etroit que n'importe quelle photo en paysage, donc
+     `width:100%` ne peut pas laisser de bandes noires. Applique des 900 px
+     (mesure a 755) il en laissait deux, larges de 118 px chacune. */
+  @media (max-width:560px){
+    #scene{gap:4px;padding:4px;justify-content:center}
+    /* `width:100%` est ce qui rend le REGROUPEMENT possible : sans lui, la
+       hauteur de contenu du cote serait la hauteur NATURELLE du fichier
+       (~860 px), le cote retrecirait toujours, et chaque image se recentrerait
+       dans sa propre bande — 85 px de noir en haut, 155 entre les deux, 165 en
+       bas (mesure avant correction). Avec, elle vaut la hauteur AFFICHEE et
+       flexbox n'a plus rien a retrecir tant que les deux tiennent. */
+    .cote{position:relative;gap:0;flex:0 1 auto;min-height:0}
+    .boite-img{flex:0 1 auto;min-height:0;width:100%}
+    .cote img{width:100%;height:auto;max-height:100%}
+    /* ⚠️ Reprendre `#scene.solo .cote` NOMMEMENT : sa regle de base
+       (`flex:1 1 100%`, specificite 1,1,0) l'emporte sur `.cote` (0,1,0). Sans
+       ca le cote remplit la hauteur et le `bottom:0` du badge et du credit
+       designe le bas de l'ECRAN : l'attribution CC BY se detachait de la photo
+       qu'elle attribue, de 200 px. */
+    #scene.solo .cote{flex:0 1 auto}
+
+    /* Lettre, badge et credit passent EN SURIMPRESSION. En flux ils reservaient
+       25 + 46 + 16 px PAR COTE meme VIDES, soit ~170 px voles aux deux images
+       avant meme d'avoir repondu. */
+    .lettre{position:absolute;left:7px;top:7px;z-index:2;height:auto;
+      font-size:15px;line-height:1;padding:3px 8px;border-radius:6px;
+      letter-spacing:1px;color:var(--texte);background:rgba(10,12,16,.72)}
+    #scene.solo .lettre{display:none}
+    .badge{position:absolute;left:50%;transform:translateX(-50%);bottom:24px;
+      z-index:2;height:auto;width:auto;max-width:92%;padding:5px 14px;
+      font-size:15px;white-space:nowrap}
+    .cote:not(.montre) .badge{display:none}
+    /* ⚠️ Le credit RESTE : une licence CC BY oblige a nommer l'auteur de
+       l'image qu'on redistribue. Fond sombre pour rester lisible par-dessus. */
+    .credit{position:absolute;left:0;right:0;bottom:0;z-index:2;height:auto;
+      padding:3px 8px;font-size:11px;background:rgba(10,12,16,.74)}
   }
 </style>
 </head>
@@ -403,7 +488,7 @@
       </div>
     </details>
 
-    <p class="depart">Cliquez un mode, ou tapez <kbd>1</kbd> / <kbd>2</kbd>.
+    <p class="depart">Choisissez un mode<span class="touche-seule">, ou tapez <kbd>1</kbd> / <kbd>2</kbd></span>.
       <button type="button" class="lien" id="lien-credits">Crédits et licences</button>
       <button type="button" class="lien" id="lien-oublier">Effacer mes scores</button></p>
     <p id="chargement" style="font-size:14px;color:#6b7480"></p>
@@ -469,7 +554,8 @@
       retouche. Les photographies viennent de <b>Wikimedia Commons</b>, sous licence
       libre&nbsp;: leur auteur s'affiche à la révélation.
     </p>
-    <p class="depart"><b>Espace</b> pour commencer. <kbd>Origine</kbd> pour changer de mode.</p>
+    <p class="depart">Touchez l'écran pour commencer.<span class="touche-seule">
+      Ou <b>Espace</b> ; <kbd>Origine</kbd> pour changer de mode.</span></p>
   </div>
 </div>
 
@@ -1053,7 +1139,7 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
     var c = compter();
     el("score").innerHTML = c.total
       ? "<b>" + c.bon + "</b> / " + c.total
-      : '<span style="color:#5c6470">pas encore de réponse</span>';
+      : '<span class="vide" style="color:#5c6470">pas encore de réponse</span>';
 
     var faces = duel ? { a:d.a, b:d.b } : { a:d.face };
     var estIa = duel ? { a:d.aIa, b:!d.aIa } : { a:d.ia };
@@ -1088,6 +1174,11 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
     el("rep-2").innerHTML = duel ? 'B <span class="t">2</span>'
                                  : 'Vraie photo <span class="t">2</span>';
     el("rep-1").disabled = el("rep-2").disabled = revele;
+    /* ⚠️ Le pied porte le mode et l'etat : sur telephone il DISPARAIT en duel
+       tant qu'on n'a pas repondu, et le CSS seul ne peut pas le savoir —
+       `#scene` porte bien `solo`/`repondable`, mais il est ailleurs dans
+       l'arbre, aucun selecteur ne remonte d'un frere a l'autre. */
+    el("pied").className = (duel ? "duel" : "solo") + (revele ? " revele" : "");
 
     var v = el("verdict"), rep = reponses[d.cle];
     if (!revele) {
