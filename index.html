@@ -1435,6 +1435,16 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
   function fermerGrille(){ el("grille").hidden = true; grilleOuverte = false; }
 
   document.addEventListener("keydown", function(e){
+    /* ⚠️ Ce gestionnaire est pose sur le DOCUMENT : il recoit donc AUSSI les
+       touches tapees dans un champ de saisie. Sans cette garde, taper le code
+       d'une partie declenchait les raccourcis — « G » ouvrait la grille, « C »
+       les credits, « F » le plein ecran, un chiffre choisissait un mode, et
+       Entree validait DEUX fois (le champ, puis `avancer()`). Pire, le
+       `preventDefault()` de la fin empechait l'espace de s'inserer du tout.
+       Le code d'une partie contient justement des lettres comme C, F et G. */
+    var cible = e.target;
+    if (cible && (cible.isContentEditable ||
+        /^(INPUT|TEXTAREA|SELECT)$/.test(cible.tagName || ""))) return;
     if (e.ctrlKey || e.altKey || e.metaKey) return;
     var k = e.key, enJeu = (pos >= PREMIER && pos <= dernier());
     if (creditsOuverts) {
