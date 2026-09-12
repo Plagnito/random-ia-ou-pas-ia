@@ -25,7 +25,7 @@
     "partie": {
       "temps": 30,
       "manches": 100,
-      "joueurs": 12
+      "joueurs": 500
     },
     "succes": [
       {

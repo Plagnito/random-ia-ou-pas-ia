@@ -265,33 +265,98 @@
   .joueurs li.moi{border-color:var(--ia);color:#f6d6ff}
   .attente{font-size:14px;color:var(--doux)}
 
-  /* ---- pendant une manche (multijoueur) ---- */
-  #chrono-rail{flex:0 0 auto;width:100%;height:8px;background:#14171f;
-    border-top:1px solid var(--trait);position:relative;overflow:hidden;z-index:30}
-  #chrono-rail[hidden]{display:none !important}
-  #chrono{height:100%;background:var(--ia);width:0;
-    transition:width .25s linear, background .25s ease}
-  #chrono.presse{background:#ff6b6b;box-shadow:0 0 10px rgba(255,107,107,.7)}
-  #etat-manche{font-size:14px;color:var(--doux);text-align:center;padding:4px 0}
+  /* ---- pendant une manche (multijoueur) ----
+     La bande du bas : le CHRONO a gauche, la barre des POINTS au milieu, qui
+     descend de 1000 a 100 pendant que le chrono tourne, et le compteur de
+     reponses a droite. Demande de Nolan, 13/09/2026 : « avoir le timer » et
+     « une petite barre en bas qui affiche les points qui diminuent ».
+     ⚠️ La barre montre les points d'une BONNE reponse donnee maintenant — pas
+     un score acquis. Une fois qu'on a repondu elle se FIGE (rayee) sur ce que
+     la reponse vaudra si elle est juste ; le verdict n'arrive qu'a la fin du
+     chrono, pour tout le monde en meme temps. */
+  #hud{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:8px 16px;
+    border-top:1px solid var(--trait);background:var(--fond2);position:relative;z-index:30}
+  #hud-temps{flex:0 0 auto;min-width:66px;display:flex;align-items:baseline;
+    justify-content:center;gap:3px;padding:4px 10px;border-radius:10px;
+    background:#1b1e26;border:1px solid var(--trait);font-variant-numeric:tabular-nums}
+  #hud-sec{font-size:28px;font-weight:800;line-height:1}
+  #hud-unite{font-size:13px;font-weight:700;color:var(--doux)}
+  #hud-rail{position:relative;flex:1 1 auto;height:30px;border-radius:999px;
+    background:#0c0e13;border:1px solid var(--trait);overflow:hidden}
+  #hud-points{position:absolute;left:0;top:0;bottom:0;width:100%;
+    background:linear-gradient(90deg,#7c2bd9,var(--ia))}
+  #hud-points-txt{position:absolute;inset:0;display:flex;align-items:center;
+    justify-content:center;font-size:15px;font-weight:800;letter-spacing:.3px;
+    font-variant-numeric:tabular-nums;text-shadow:0 1px 3px rgba(0,0,0,.85)}
+  #hud-etat{flex:0 0 auto;font-size:13px;color:var(--doux);white-space:nowrap;
+    font-variant-numeric:tabular-nums}
+  #hud-etat b{color:var(--texte)}
+  #hud.presse #hud-points{background:linear-gradient(90deg,#c2410c,#ff6b6b)}
+  #hud.presse #hud-temps{border-color:#ff6b6b;color:#ffc0c0}
+  #hud.fige #hud-points{
+    background:repeating-linear-gradient(135deg,#6d28d9 0 10px,#9a45ea 10px 20px)}
+  #hud.gagne #hud-points{background:linear-gradient(90deg,#15803d,var(--reel))}
+  #hud.gagne #hud-points-txt{color:#eafff1}
+  #hud.perdu #hud-points,#hud.rien #hud-points{width:0 !important}
+  #hud.perdu #hud-points-txt{color:var(--rate)}
+  #hud.rien #hud-points-txt{color:var(--doux)}
+  #hud.revelation #hud-temps,#hud.depart #hud-temps{color:var(--doux)}
+  #etat-manche{font-size:14px;color:var(--rate);text-align:center;padding:6px 10px}
+  .rep.choisi{border-color:var(--ia);background:#2a1633;color:#f6d6ff}
+  .rep.choisi:disabled{opacity:1}
+  .cote.choisi img{border-color:var(--ia);box-shadow:0 0 0 3px rgba(226,80,245,.35)}
+  #depart{position:fixed;inset:0;z-index:45;display:flex;align-items:center;
+    justify-content:center;background:var(--fond);text-align:center}
+  #depart p{font-size:18px;color:var(--doux);margin:0}
+  #depart b{display:block;font-size:120px;line-height:1.05;font-weight:800;
+    color:var(--ia);font-variant-numeric:tabular-nums;margin:6px 0 10px}
+  #depart .info{font-size:15px;max-width:360px;margin:0 auto}
+  body.en-partie #o-prec,body.en-partie #o-suiv,body.en-partie #o-grille{display:none}
+  @media (max-width:560px){
+    #hud{gap:8px;padding:6px 8px}
+    #hud-temps{min-width:50px;padding:3px 7px}
+    #hud-sec{font-size:22px}
+    #hud-rail{height:26px}
+    #hud-points-txt{font-size:13px}
+    #hud-etat .lib{display:none}
+    #depart b{font-size:92px}
+  }
   #tableau{position:fixed;right:14px;bottom:14px;z-index:25;background:var(--fond2);
     border:1px solid var(--trait);border-radius:12px;padding:10px 14px;
     max-width:260px;box-shadow:0 8px 26px rgba(0,0,0,.5)}
   #tableau h4{margin:0 0 6px;font-size:11px;letter-spacing:1.4px;
     text-transform:uppercase;color:var(--ia)}
-  #tableau ol{margin:0;padding-left:18px;font-size:14px}
-  #tableau li{padding:1px 0}
+  #tableau ol{margin:0;padding:0;list-style:none;font-size:14px;min-width:190px}
+  #tableau li{padding:1px 0;display:flex;gap:8px}
+  #tableau li .r{color:#6b7480;min-width:22px;text-align:right;font-variant-numeric:tabular-nums}
+  #tableau li .pts{margin-left:auto;color:#aab2bf;font-variant-numeric:tabular-nums}
   #tableau li.moi{color:#f6d6ff;font-weight:800}
+  #tableau li.sep{border-top:1px dashed var(--trait);margin-top:3px;padding-top:3px}
   #tableau .gel{font-size:12px;color:#6b7480;margin:6px 0 0}
-  @media (max-width:700px){
+  /* ⚠️ Sur grand ecran le classement devient une COLONNE : en panneau flottant
+     il recouvrait le bas de l'image B, son credit et le compte a rebours de
+     l'image suivante (vu a l'ecran le 13/09/2026). */
+  @media (min-width:1000px){
+    body.en-partie #app{margin-right:240px}
+    body.en-partie #tableau{top:0;right:0;bottom:0;width:240px;max-width:none;
+      border-radius:0;border-width:0 0 0 1px;box-shadow:none;padding:18px 16px;overflow:auto}
+    body.en-partie #tableau h4{margin-bottom:12px}
+    body.en-partie #tableau li{padding:3px 0}
+  }
+  @media (max-width:999px){
     /* ⚠️ En `static`, le tableau s'ajoutait APRES un `#app` de 100vh : la page
-       gagnait 83 px et le classement tombait sous la ligne de flottaison. Sur
-       telephone il reste donc FIXE, en bandeau bas, et `#app` lui cede la place
-       — un classement qu'il faut aller chercher en faisant defiler n'est pas un
+       gagnait 83 px et le classement tombait sous la ligne de flottaison. Il
+       reste donc FIXE, en bandeau bas, et `#app` lui cede la place — un
+       classement qu'il faut aller chercher en faisant defiler n'est pas un
        classement, c'est une note de bas de page. */
     #tableau{left:8px;right:8px;bottom:8px;max-width:none;max-height:104px;
       overflow:auto;padding:8px 12px}
-    #tableau ol{display:flex;gap:14px;flex-wrap:wrap;padding-left:16px;margin:0}
+    #tableau ol{display:flex;gap:4px 14px;flex-wrap:wrap;margin:0;min-width:0}
+    #tableau li .pts{margin-left:0}
+    #tableau li.sep{border-top:0;margin-top:0;padding-top:1px}
     body.en-partie #app{height:calc(100vh - 112px)}
+  }
+  @media (max-width:700px){
     .salon{gap:16px}
     .salon-qr svg{width:150px;height:150px}
     .grand-code{font-size:26px;letter-spacing:4px}
@@ -303,11 +368,13 @@
     color:var(--doux);font-weight:800;padding:4px 14px;text-align:left}
   #classement-partie td{padding:5px 14px;border-top:1px solid var(--trait)}
   #classement-partie tr.moi td{color:#f6d6ff;font-weight:800}
+  #classement-partie tr.sep td{border-top:0;color:#6b7480;text-align:center;padding:2px}
 
   #succes-flash{position:fixed;right:20px;top:70px;z-index:40;
     background:var(--fond2);border:1px solid var(--ia);border-left-width:4px;
     border-radius:9px;padding:11px 16px;display:flex;flex-direction:column;gap:2px;
     box-shadow:0 8px 26px rgba(0,0,0,.5);max-width:280px}
+  @media (min-width:1000px){ body.en-partie #succes-flash{right:262px} }
   #succes-flash b{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;
     color:var(--ia)}
   #succes-flash span{font-size:15px;font-weight:700}
@@ -625,8 +692,15 @@
     <div id="suite"></div>
   </div>
 
-  <div id="chrono-rail" hidden>
-    <div id="chrono" role="progressbar" aria-label="Chrono de la manche" aria-valuemin="0" aria-valuemax="100"></div>
+  <!-- La bande de partie : chrono, points qui descendent, reponses recues. -->
+  <div id="hud" hidden>
+    <div id="hud-temps" title="Temps restant pour répondre"><b id="hud-sec">10</b><span id="hud-unite">s</span></div>
+    <div id="hud-rail" role="progressbar" aria-label="Points d'une bonne réponse maintenant"
+         aria-valuemin="0" aria-valuemax="1000">
+      <div id="hud-points"></div>
+      <span id="hud-points-txt">1000 pts</span>
+    </div>
+    <div id="hud-etat"><b id="hud-repondu">0</b> / <span id="hud-joueurs">0</span><span class="lib"> ont répondu</span></div>
   </div>
 </div>
 
@@ -635,6 +709,15 @@
   <h4 id="tableau-titre">Classement</h4>
   <ol id="tableau-liste"></ol>
   <p class="gel" id="tableau-gel" hidden></p>
+</div>
+
+<!-- ============ DÉPART D'UNE PARTIE (compte à rebours) ============ -->
+<div id="depart" hidden>
+  <div>
+    <p>La partie commence</p>
+    <b id="depart-n">3</b>
+    <p class="info" id="depart-info"></p>
+  </div>
 </div>
 
 <!-- ============ SUCCÈS (annonce fugitive) ============ -->
@@ -1022,7 +1105,15 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
     else if (!MEM.trouvees[k]) { MEM.ratees[k] = 1; }
   }
 
-  function cle(){ return "iaoupasia2-" + mode + "-" + niveau; }
+  /* ⚠️ Une partie partagee a SES reponses, rangees a part. Avec la meme cle
+     que le jeu seul, le compteur d'une partie neuve affichait « 3 / 6 » avant
+     la premiere image (les reponses d'une partie solo d'avant), et chaque
+     reponse donnee en partie ecrasait la partie solo en cours. Rangees par
+     code, elles survivent en plus a un rechargement de page. */
+  function cle(){
+    return "iaoupasia2-" + (PARTIE && PARTIE.code ? "partie-" + PARTIE.code + "-" : "") +
+           mode + "-" + niveau;
+  }
   function charger(){
     try { reponses = JSON.parse(localStorage.getItem(cle()) || "{}"); }
     catch (e) { reponses = {}; }
@@ -1088,9 +1179,9 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
        la carte d'origine, c'est promettre le contraire de ce qui se passe. */
     if (enPartie()) {
       cartes[1] = ["Le chrono compte",
-        "Vous avez le temps que vous voulez, mais les points tombent&nbsp;: 100 pour une " +
-        "réponse immédiate, 0 au bout de <b>" + tempsPartie + "&nbsp;s</b>. Seules les " +
-        "bonnes réponses rapportent, et le temps est compté par le serveur."];
+        "Chaque image a <b>" + tempsPartie + "&nbsp;s</b>. Les points d'une bonne réponse " +
+        "tombent de <b>1000</b> à <b>100</b> pendant que le chrono tourne — la barre du bas " +
+        "les montre. Tout le monde attend la fin du chrono, puis la réponse s'affiche."];
     }
     el("cartes-regles").innerHTML = cartes.map(function(c){
       return '<div class="carte"><b>' + c[0] + '</b><span>' + c[1] + '</span></div>';
@@ -1196,6 +1287,10 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
                                  : 'Générée par IA <span class="t">1</span>';
     el("rep-2").innerHTML = duel ? 'B <span class="t">2</span>'
                                  : 'Vraie photo <span class="t">2</span>';
+    /* En partie synchronisee le pied a ses propres etats (repondu, verdict a
+       venir, compte a rebours) : on les peint a part, sans le bouton « Image
+       suivante » — c'est le serveur qui fait passer a l'image suivante. */
+    if (synchro) { peindrePied(); return; }
     el("rep-1").disabled = el("rep-2").disabled = revele;
     /* ⚠️ Le pied porte le mode et l'etat : sur telephone il DISPARAIT en duel
        tant qu'on n'a pas repondu, et le CSS seul ne peut pas le savoir —
@@ -1234,7 +1329,23 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
 
   function repondre(bouton){
     if (pos < PREMIER || pos > dernier() || revele) return;
+    /* 🔴 EN PARTIE, REPONDRE NE REVELE RIEN ET NE FAIT PAS AVANCER. Signale par
+       Nolan le 13/09/2026 : « le joueur est cense attendre, et quand je clique
+       je passe a l'image suivante ». La reponse est enregistree, le verdict
+       attend la fin du chrono — pour tout le monde en meme temps. */
+    if (synchro) { choisirEnPartie(bouton); return; }
     var d = liste()[pos - PREMIER];
+    noterReponse(d, bouton);
+    jugerItem(d, bouton);
+    revele = true;
+    rendre();
+  }
+
+  /* Ce qu'une reponse change EN LOCAL : le score de la partie, la memoire des
+     images reconnues, les succes. En partie synchronisee c'est appele a la
+     REVELATION, pas au clic : un succes « Premier rate » qui s'afficherait au
+     moment de repondre donnerait le verdict avant la fin du chrono. */
+  function noterReponse(d, bouton){
     var juste = (bouton === bonBouton(d));
     reponses[d.cle] = juste;
     /* En duel « meme sujet », une reponse tranche les DEUX images du sujet
@@ -1248,17 +1359,10 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
     else if (mode === "duels") { marquer(d.p, true, juste); marquer(d.p, false, juste); }
     else { marquer(d.p, d.ia, juste); if (juste) MEM.solo[d.p.id + (d.ia?"i":"r")] = 1; }
     sauver(); sauverMemoire();
-    jugerItem(d, bouton);
-    /* ⚠️ En partie synchronisee, repondre ne fait pas avancer : c'est le serveur
-       qui decide quand on passe a l'image suivante, quand tout le monde a
-       repondu ou quand le temps est ecoule. Avancer tout seul ferait jouer
-       chacun a son rythme — c'est-a-dire exactement ce que ce mode remplace. */
-    if (synchro) { reponduA = Date.now(); setTimeout(sonderManche, 250); }
     debloquer("premier-pas");
     if (!juste) debloquer("premiere-erreur");
     verifierSeuils();
-    revele = true;
-    rendre();
+    return juste;
   }
 
   /* ── Les succes ────────────────────────────────────────────────────────────
@@ -1283,7 +1387,8 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
     "sans-faute":"Sans faute", "images-50":"Cinquante", "images-100":"Cent",
     "images-250":"Deux cent cinquante", "images-500":"Cinq cents",
     "expert-50":"L'œil technique", "solo-100":"Sans comparaison",
-    "revenant":"Le revenant" };
+    "multi-gagnee":"Premier de la partie", "multi-jouee":"À plusieurs",
+    "multi-eclair":"Le réflexe", "revenant":"Le revenant" };
   function annoncerSucces(id){
     var b = el("succes-flash");
     if (!b) return;
@@ -1382,15 +1487,20 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
   }
 
   function avancer(){
+    /* En partie synchronisee on ne navigue pas : le serveur mene. Sans cette
+       garde un clic sur l'image, Espace ou la fleche faisaient passer a
+       l'image suivante — le defaut signale le 13/09/2026. */
+    if (synchro) return;
     if (pos === INTRO) { choisirMode("duels"); return; }
     if (pos >= PREMIER && pos <= dernier() && !revele) { revele = true; rendre(); return; }
     if (pos < bilanPos()) { pos++; revele = false; rendre(); }
   }
   function reculer(){
+    if (synchro) return;
     if (pos >= PREMIER && pos <= dernier() && revele) { revele = false; rendre(); return; }
     if (pos > REGLES) { pos--; revele = false; rendre(); }
   }
-  function allerA(rang){ pos = PREMIER + rang; revele = false; fermerGrille(); rendre(); }
+  function allerA(rang){ if (synchro) return; pos = PREMIER + rang; revele = false; fermerGrille(); rendre(); }
 
   var creditsOuverts = false;
   function basculerCredits(){
@@ -1419,6 +1529,7 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
   var grilleOuverte = false;
   function basculerGrille(){
     if (grilleOuverte) { fermerGrille(); return; }
+    if (synchro) return;
     var c = el("vignettes");
     if (!c.childElementCount) {
       liste().forEach(function(d, i){
@@ -1474,6 +1585,15 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
         repondre(2); e.preventDefault(); return;
       }
     }
+    /* En partie : on repond (au-dessus), on passe en plein ecran, et rien
+       d'autre. Les touches de navigation sont avalees pour ne pas faire
+       defiler la page non plus. */
+    if (synchro && enJeu) {
+      if (k === "f" || k === "F") pleinEcran();
+      else if (!/^( |Spacebar|Enter|Arrow\w+|Page\w+|Home|End|g|G|r|R)$/.test(k)) return;
+      e.preventDefault();
+      return;
+    }
     switch (k) {
       case " ": case "Spacebar": case "ArrowRight": case "PageDown": case "Enter":
         avancer(); break;
@@ -1526,6 +1646,7 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
     } catch (e) { /* refuse dans une iframe sans allow-fullscreen : tant pis */ }
   }
   function versAccueil(){
+    if (synchro) quitterPartie();
     stopperSondage();
     pos = INTRO; revele = false; fermerGrille(); rendre();
   }
@@ -1544,11 +1665,8 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
   el("bt-rejouer").addEventListener("click", function(){
     /* Rejouer, c'est une NOUVELLE suite : on retire la graine de l'adresse,
        sinon on rejouerait exactement la meme partie sans le vouloir. */
-    stopperSondage();
+    quitterPartie();
     GRAINE = (Math.random() * 4294967296) >>> 0;
-    PARTIE = null; synchro = false;
-    el("tableau").hidden = true;
-    document.body.classList.remove("en-partie");
     choisirMode(mode);
   });
 
@@ -1557,6 +1675,7 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
   el("mode-duel").addEventListener("click", function(){ choisirMode("duels"); });
   el("mode-solo").addEventListener("click", function(){ choisirMode("solo"); });
   el("mode-tag").addEventListener("click", function(){
+    if (synchro) { versAccueil(); return; }
     pos = INTRO; revele = false; fermerGrille(); rendre();
   });
   el("rep-1").addEventListener("click", function(e){ e.stopPropagation(); repondre(1); });
@@ -1711,7 +1830,9 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
   function enPartie(){ return !!(PARTIE && PARTIE.code && atlas && atlas.partie); }
 
   function servirItem(d){
-    if (!enPartie()) return;
+    /* En partie synchronisee le chrono est celui de la MANCHE, le meme pour
+       tous : 500 appels par image pour le redire ne serviraient a rien. */
+    if (!enPartie() || synchro) return;
     var it = itemDe(d);
     if (envoyes[it]) return;
     envoyes[it] = 1;
@@ -1881,30 +2002,43 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
          Comparer les pseudos creditait les deux « Marie » d'une partie du
          succes de la premiere — et l'identifiant, lui, ne sort plus du
          serveur, il n'y a donc plus rien a comparer ici. */
-      var lignes = r.table.map(function(j, i){
+      var ligne = function(j, i){
         /* Un nom absent est un nom INCONNU : afficher l'identifiant a sa place
            donnerait « inv:kJ2p… » en face des points. */
-        var nom = j.pseudo ? String(j.pseudo).replace(/[<>&]/g, "")
-                           : "Joueur " + (i + 1);
-        return '<tr class="' + (j.moi ? "moi" : "") + '"><td>' + (i + 1) +
-               "</td><td>" + nom + "</td><td>" + j.points + "</td><td>" +
+        var rang = j.rang || (i + 1);
+        var nom = j.pseudo ? String(j.pseudo).replace(/[<>&]/g, "") : "Joueur " + rang;
+        return '<tr class="' + (j.moi ? "moi" : "") + '"><td>' + rang +
+               "</td><td>" + nom + "</td><td>" + milliers(j.points) + "</td><td>" +
                j.bonnes + " / " + j.total + "</td></tr>";
-      }).join("");
+      };
+      var lignes = r.table.map(ligne).join("");
+      /* A 500 joueurs le serveur ne rend que la tete : sa propre ligne arrive a
+         part quand on n'y figure pas. */
+      if (r.moi && r.moi.rang > r.table.length) {
+        lignes += '<tr class="sep"><td colspan="4">…</td></tr>' + ligne(r.moi, r.moi.rang - 1);
+      }
+      var n = r.joueurs || r.table.length;
       boite.hidden = false;
       boite.innerHTML =
         '<h3 style="font-size:13px;letter-spacing:1.6px;text-transform:uppercase;' +
-        'color:var(--ia);margin:24px 0 0">Classement de la partie ' + PARTIE.code + "</h3>" +
+        'color:var(--ia);margin:24px 0 0">Classement de la partie ' + PARTIE.code +
+        " · " + n + " joueur" + (n > 1 ? "s" : "") + "</h3>" +
         "<table><tr><th>#</th><th>Joueur</th><th>Points</th><th>Trouvées</th></tr>" +
         lignes + "</table>" +
         '<p class="chapo" style="font-size:14px;margin-top:8px">Les points récompensent ' +
-        "la rapidité, et seulement sur les bonnes réponses&nbsp;: " + tempsPartie +
-        "&nbsp;s pour tomber de 100 à 0. Le chrono part quand l'image s'affiche, " +
-        "et c'est le serveur qui le tient.</p>";
+        "la rapidité, et seulement sur les bonnes réponses&nbsp;: 1000 pour une réponse " +
+        "immédiate, 100 à la dernière seconde du chrono (" + tempsPartie + "&nbsp;s). " +
+        "C'est le serveur qui tient le chrono.</p>";
       /* « Gagner une partie multijoueur » : premier, et pas tout seul. */
-      if (r.table.length >= 2 && r.table[0] && r.table[0].moi) {
+      if (n >= 2 && r.table[0] && r.table[0].moi) {
         debloquer("multi-gagnee");
       }
     }).catch(function(){ boite.hidden = true; });
+  }
+
+  /* 1234567 → « 1 234 567 », avec l'espace fine insecable du francais. */
+  function milliers(n){
+    return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, "\u202f");
   }
 
   /* -- Mise en route ------------------------------------------------------ */
@@ -1923,10 +2057,7 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
 
     el("bt-commencer").addEventListener("click", commencerPartie);
     el("bt-quitter-salon").addEventListener("click", function(){
-      stopperSondage();
-      PARTIE = null; synchro = false;
-      el("tableau").hidden = true;
-      document.body.classList.remove("en-partie");
+      quitterPartie();
       pos = INTRO; montrer("intro");
     });
     el("salon-copier").addEventListener("click", function(){
@@ -2028,34 +2159,54 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
      LES PARTIES SYNCHRONISEES
 
      Tout le monde voit la meme image en meme temps, un chrono tourne, on passe
-     a la suivante ensemble. Trois choses portent ce mode, et aucune n'est
-     optionnelle :
+     a la suivante ensemble. Refondu le 13/09/2026 pour tenir 500 joueurs, et
+     pour ce que Nolan a demande : le joueur ATTEND la fin du chrono.
+
+     L'horaire d'une partie, fixe par le serveur a l'instant du lancement :
+
+       depart (4 s) | question 1 | revelation 1 | question 2 | revelation 2 | …
 
      1. LA SUITE EST FIGEE PAR L'HOTE au lancement, pas tiree par chaque
         navigateur. Sans ca le classement compare des parties differentes.
-     2. LE CHRONO EST CELUI DU SERVEUR. `resteMs` vient de lui ; on ne fait
-        qu'afficher une barre qui descend entre deux sondages.
-     3. LE CLASSEMENT EXCLUT LA MANCHE EN COURS. C'est une garde anti-triche :
-        un classement qui bouge a chaque reponse laisse LIRE la bonne reponse
-        dans le score d'un complice.
+     2. LE CHRONO EST CELUI DU SERVEUR. `resteMs` vient de lui ; la page en
+        deduit un horaire LOCAL (`H`) qui fait tourner le chrono, la barre des
+        points et la revelation sans attendre le sondage suivant.
+     3. REPONDRE NE REVELE RIEN. La reponse est enregistree et la barre se fige
+        sur ce qu'elle vaudra si elle est juste ; le verdict tombe a la fin du
+        chrono, pour tout le monde en meme temps. Sinon le premier a repondre
+        soufflerait la reponse aux autres pendant qu'ils ont encore le temps.
+     4. LE CLASSEMENT N'ARRIVE QU'AVEC LA REVELATION, dans la reponse du
+        sondage : plus aucune requete de classement pendant une partie.
 
-     ⚠️ Le sondage remplace le temps reel. Pas de WebSocket : on interroge
-     `partie.manche()` toutes les 1,5 s. Pour un quiz a dix secondes c'est
-     largement assez, et ca survit a une coupure — un joueur qui revient
-     retrouve la partie ou elle en est, pas ou il l'a laissee. */
+     ⚠️ POURQUOI LE SONDAGE N'EST PLUS REGULIER. A 500 joueurs, un sondage
+     toutes les 1,5 s c'etaient 330 requetes par seconde sur le Pi, chacune
+     portant tout le salon et suivie d'une demande de classement complet. On
+     sonde maintenant quand quelque chose peut avoir change : au plus toutes
+     les 3 s pendant une question (pour le compteur de reponses), et juste
+     apres chaque changement de phase — avec une GIGUE de 150 a 850 ms, sans
+     laquelle 500 navigateurs frapperaient le serveur dans la meme milliseconde
+     a chaque fin de chrono. */
 
-  var SONDAGE_MS = 1500;
-  var horloge = null, sondeur = null, mancheVue = -1, finieVue = false;
+  var SALON_MS = 2000;
+  var QUESTION_MS = 3000;
+  var POINTS_MAX = 1000, POINTS_MIN = 100;   /* le bareme du serveur, recopie */
+  var sondeur = null, horloge = null, finieVue = false;
+  /* Chaque boucle de sondage porte sa GENERATION : une reponse qui arrive
+     apres qu'on a quitte la partie (ou relance une boucle) est ignoree, au
+     lieu de replanifier un sondage fantome. */
+  var GEN = 0;
 
-  /* 🔴 LE TEMPS DE VOIR LE VERDICT. Trouve au banc : on repond, et si les autres
-     ont deja repondu la manche se ferme dans la seconde — la page saute a
-     l'image suivante avant qu'on ait vu si on avait juste. Le jeu devient une
-     suite de clics sans retour, c'est-a-dire qu'il n'apprend plus rien.
-     On retient donc l'avancement le temps de lire le verdict. Ce delai est
-     PUREMENT local : il ne touche ni le chrono ni le classement, qui restent
-     ceux du serveur — un joueur lent ne penalise personne. */
-  var VERDICT_MS = 1900;
-  var reponduA = 0;
+  var H = null;          /* l'horaire local de l'image en cours */
+  var CHOIX = null;      /* ma reponse a l'image en cours */
+  var REVELE_IDX = -1;   /* la derniere image dont la revelation est appliquee */
+  var CLASSEMENT = null; /* le dernier resume recu : { top, moi, classes } */
+  var phaseVue = "";
+
+  function gigue(){ return 150 + Math.random() * 700; }
+  function planifier(ms){
+    if (sondeur) clearTimeout(sondeur);
+    sondeur = setTimeout(sonderManche, Math.max(120, ms));
+  }
 
   /* De l'empreinte d'une image vers la paire et la face. Construit une fois. */
   var PAR_IMAGE = (function(){
@@ -2067,12 +2218,24 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
   })();
 
   function stopperSondage(){
-    if (sondeur) { clearInterval(sondeur); sondeur = null; }
+    GEN++;
+    if (sondeur) { clearTimeout(sondeur); sondeur = null; }
     if (horloge) { clearInterval(horloge); horloge = null; }
-    if (el("chrono-rail")) el("chrono-rail").hidden = true;
-    el("chrono").hidden = true;
+    el("hud").hidden = true;
+    el("depart").hidden = true;
     el("etat-manche").hidden = true;
   }
+
+  /* Sortir d'une partie, quelle qu'en soit la raison (accueil, rejouer, salon). */
+  function quitterPartie(){
+    stopperSondage();
+    PARTIE = null; synchro = false;
+    H = null; CHOIX = null; REVELE_IDX = -1; CLASSEMENT = null;
+    el("tableau").hidden = true;
+    document.body.classList.remove("en-partie");
+  }
+
+  function sansBalises(t){ return String(t == null ? "" : t).replace(/[<>&]/g, ""); }
 
   /* ── Le salon ───────────────────────────────────────────────────────────── */
   function montrerSalon(){
@@ -2084,8 +2247,8 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
       : "En attente de l'hôte…";
     var r = PARTIE.reglages || {};
     el("salon-reglages").textContent =
-      (r.temps || 10) + " s par image · " + (r.manches || "?") + " images · "
-      + "jusqu'à " + (r.joueurs || 8) + " joueurs";
+      (r.temps || 10) + " s par image, puis la réponse · " + (r.manches || "?") +
+      " images · jusqu'à " + (r.joueurs || 500) + " joueurs";
     dessinerQR();
     lancerSondageSalon();
   }
@@ -2112,30 +2275,44 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
     }
   }
 
-  function peindreJoueurs(salon){
+  /* ⚠️ Le serveur ne rend que les 60 premiers arrives, et le total : 500
+     pastilles de noms ne se lisent pas, et elles pesaient la moitie de chaque
+     sondage. */
+  function peindreJoueurs(salon, total){
     var ul = el("salon-joueurs");
     if (!salon || !salon.length) {
       ul.innerHTML = "<li>personne pour l'instant</li>";
       return;
     }
-    ul.innerHTML = salon.map(function(j){
-      return '<li class="' + (j.moi ? "moi" : "") + '">' +
-             String(j.nom || "?").replace(/[<>&]/g, "") + "</li>";
+    var n = Math.max(total || 0, salon.length);
+    var html = salon.map(function(j){
+      return '<li class="' + (j.moi ? "moi" : "") + '">' + sansBalises(j.nom || "?") + "</li>";
     }).join("");
+    if (n > salon.length) {
+      html += '<li style="border-style:dashed;color:var(--doux)">et ' +
+              milliers(n - salon.length) + " autre" + (n - salon.length > 1 ? "s" : "") + "</li>";
+    }
+    ul.innerHTML = html;
+    var etiq = ul.parentNode && ul.parentNode.querySelector(".etiq");
+    if (etiq) etiq.textContent = "Dans le salon · " + milliers(n);
   }
 
   function lancerSondageSalon(){
     stopperSondage();
+    var g = GEN;
     var tour = function(){
+      if (g !== GEN || !PARTIE) return;
       Promise.resolve(atlas.partie.manche(PARTIE.code)).then(function(m){
-        if (!m || !m.ok) return;
-        peindreJoueurs(m.salon);
-        /* L'hote a lance : tout le monde bascule dans le jeu. */
-        if (m.lancee) { stopperSondage(); entrerEnPartie(); }
-      }).catch(function(){});
+        if (g !== GEN) return;
+        if (m && m.ok) {
+          peindreJoueurs(m.salon, m.joueurs);
+          /* L'hote a lance : tout le monde bascule dans le jeu. */
+          if (m.lancee) { entrerEnPartie(m); return; }
+        }
+        sondeur = setTimeout(tour, SALON_MS);
+      }).catch(function(){ if (g === GEN) sondeur = setTimeout(tour, SALON_MS); });
     };
     tour();
-    sondeur = setInterval(tour, SONDAGE_MS);
   }
 
   /* ── L'hote lance ───────────────────────────────────────────────────────── */
@@ -2146,6 +2323,8 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
        le monde. On envoie l'empreinte de la face 0 de chaque paire — en duel
        c'est l'image de gauche, en solo l'image montree. */
     var items = liste().map(itemDe);
+    var manches = PARTIE && PARTIE.reglages && PARTIE.reglages.manches;
+    if (manches) items = items.slice(0, manches);
     Promise.resolve(atlas.partie.demarrer(items)).then(function(r){
       b.disabled = false; b.textContent = "Commencer la partie";
       if (!r || !r.ok) {
@@ -2153,120 +2332,345 @@ var mode = "duels", niveau = "tout", longueur = 100;   /* 0 = tout */
           (r && (r.error || r.message)) || "Impossible de lancer la partie.";
         return;
       }
-      stopperSondage();
-      entrerEnPartie();
+      entrerEnPartie(null);
     }).catch(function(){
       b.disabled = false; b.textContent = "Commencer la partie";
     });
   }
 
   /* ── La partie ──────────────────────────────────────────────────────────── */
-  function entrerEnPartie(){
-    synchro = true;
-    mancheVue = -1; finieVue = false;
-    el("tableau").hidden = false;
-    document.body.classList.add("en-partie");
-    if (el("chrono-rail")) el("chrono-rail").hidden = false;
-    el("chrono").hidden = false;
-    el("etat-manche").hidden = false;
+  function entrerEnPartie(m){
     stopperSondage();
-    var tour = function(){ sonderManche(); };
-    tour();
-    sondeur = setInterval(tour, SONDAGE_MS);
+    synchro = true;
+    finieVue = false; REVELE_IDX = -1; CHOIX = null; H = null; phaseVue = "";
+    charger();
+    el("tableau").hidden = false;
+    el("tableau-titre").textContent = "Classement";
+    el("tableau-liste").innerHTML = "<li>après la première image</li>";
+    el("tableau-gel").hidden = true;
+    document.body.classList.add("en-partie");
+    el("hud").hidden = false;
+    el("depart-info").innerHTML = tempsPartie + "&nbsp;s par image. Les points d'une bonne " +
+      "réponse tombent de 1000 à 100 pendant le chrono&nbsp;; la réponse s'affiche à la fin.";
+    horloge = setInterval(tic, 100);
+    if (m) appliquerManche(m, GEN); else sonderManche();
   }
 
   function sonderManche(){
     if (!enPartie()) return;
+    var g = GEN;
     Promise.resolve(atlas.partie.manche(PARTIE.code)).then(function(m){
-      if (!m || !m.ok) return;
-      PARTIE.manche = m;
-      peindreTableau(m);
-      if (m.finie) {
-        if (!finieVue) {
-          finieVue = true; stopperSondage();
-          debloquer("multi-jouee");
-          pos = bilanPos(); rendre();
-        }
-        return;
+      if (g !== GEN) return;
+      if (!m || !m.ok) { planifier(2000); return; }
+      appliquerManche(m, g);
+    }).catch(function(){ if (g === GEN) planifier(2000); });
+  }
+
+  function appliquerManche(m, g){
+    if (g !== GEN || !PARTIE) return;
+    PARTIE.manche = m;
+    if (m.classement) { CLASSEMENT = m.classement; peindreTableau(); }
+    if (m.finie) {
+      if (!finieVue) {
+        finieVue = true;
+        stopperSondage();
+        /* La partie est finie : on redonne la main (revoir les images, rejouer)
+           en gardant PARTIE, dont le bilan lit le classement final. */
+        synchro = false;
+        el("tableau").hidden = true;
+        document.body.classList.remove("en-partie");
+        debloquer("multi-jouee");
+        pos = bilanPos(); revele = false; rendre();
       }
-      if (!m.lancee) return;
-      poserChrono(m);
-      el("etat-manche").innerHTML =
-        "Image <b>" + (m.index + 1) + "</b> / " + m.total +
-        " · " + m.repondu + " / " + m.joueurs + " ont répondu" +
-        (m.jaiRepondu && m.gele
-          ? ' · <span style="color:var(--ia)">en attente des autres</span>' : "");
-      if (m.index !== mancheVue) {
-        var attendu = VERDICT_MS - (Date.now() - reponduA);
-        if (reponduA && attendu > 0) {
-          /* On laisse le verdict a l'ecran, puis on rattrape. Pas de `mancheVue`
-             mis a jour ici : si la manche a encore change entre-temps, le
-             prochain sondage servira la bonne. */
-          setTimeout(sonderManche, attendu + 50);
-          return;
-        }
-        mancheVue = m.index;
-        allerAManche(m);
-      }
-    }).catch(function(){});
+      return;
+    }
+    if (!m.lancee) { planifier(SALON_MS); return; }
+
+    var recu = Date.now();
+    var fen = m.fenetreMs || 10000, pau = m.pauseMs || 5000;
+    var reste = m.resteMs || 0;
+    var tQFin = m.phase === "depart" ? recu + reste + fen
+              : m.phase === "question" ? recu + reste
+              : recu + reste - pau;
+    var neuve = !H || H.index !== m.index;
+    H = { index: m.index, item: m.item, total: m.total, fenetre: fen, pause: pau,
+          tQDebut: tQFin - fen, tQFin: tQFin, tRevFin: tQFin + pau,
+          repondu: m.repondu || 0, joueurs: m.joueurs || 0 };
+    if (neuve) { CHOIX = null; phaseVue = ""; allerAManche(m); }
+
+    /* Reprise apres un rechargement : le serveur se souvient de ma reponse. */
+    if (m.jaiRepondu && (!CHOIX || CHOIX.item !== m.item)) {
+      CHOIX = { item: m.item, bouton: m.maReponse === "photo" ? 2 : 1,
+                points: typeof m.mesPoints === "number" ? m.mesPoints : null,
+                ms: typeof m.monMs === "number" ? m.monMs : null, confirme: true };
+    }
+    /* Le verdict du SERVEUR fait foi : la page le devine des la fin du chrono
+       (elle connait la reponse), le sondage le confirme ou le corrige. */
+    if (m.phase === "revelation" && m.resultat && CHOIX && CHOIX.item === m.item) {
+      var change = CHOIX.juste !== m.resultat.juste;
+      CHOIX.juste = m.resultat.juste;
+      if (m.resultat.juste) CHOIX.points = m.resultat.points;
+      if (typeof m.resultat.ms === "number") CHOIX.ms = m.resultat.ms;
+      if (change && REVELE_IDX === m.index) peindrePied();
+    }
+    tic();
+
+    if (m.phase === "question") planifier(Math.min(QUESTION_MS, reste + gigue()));
+    else planifier(reste + gigue());
   }
 
   /* Poser l'image de la manche courante. On ne « joue » plus la liste locale :
      c'est le serveur qui dit quelle image montrer. */
   function allerAManche(m){
-    var ref = PAR_IMAGE[m.item];
-    if (!ref) return;                       /* item d'une autre pièce : on ignore */
     var rang = -1, l = liste();
     for (var k = 0; k < l.length; k++) {
       if (itemDe(l[k]) === m.item) { rang = k; break; }
     }
-    if (rang < 0) return;
+    var manque = el("etat-manche");
+    /* ⚠️ Une image que cette page ne connait pas n'est pas un item d'une autre
+       piece : c'est presque toujours une page PERIMEE. Des images s'ajoutent
+       au jeu tout seules depuis le 13/09 ; un invite dont le navigateur garde
+       l'ancien `donnees.js` ne trouverait pas les nouvelles, et resterait
+       fige sur l'image precedente sans comprendre pourquoi. On le lui dit. */
+    if (rang < 0) {
+      manque.hidden = false;
+      manque.textContent = "Cette image n'existe pas dans votre version du jeu — " +
+        "rechargez la page pour rattraper la partie.";
+      return;
+    }
+    manque.hidden = true;
     pos = PREMIER + rang;
-    revele = !!m.jaiRepondu;
+    revele = false;
     montrer("jeu");
-    /* ⚠️ L'en-tete disait « 1 / 100 » pendant une partie de 20 images : il lit la
-       liste locale, qui ne sait rien de la partie. On lui donne le vrai total. */
-    el("pos-t").textContent = m.total;
-    el("pos-n").textContent = m.index + 1;
     rendre();
   }
 
-  /* La barre de chrono descend toute seule entre deux sondages : sonder a
-     chaque dixieme de seconde pour l'animer serait du trafic pour rien. */
-  function poserChrono(m){
-    if (horloge) clearInterval(horloge);
-    var fin = Date.now() + (m.resteMs || 0);
-    var total = m.fenetreMs || 10000;
-    var barre = el("chrono");
-    var rail = el("chrono-rail");
-    var peindre = function(){
-      var reste = Math.max(0, fin - Date.now());
-      var part = Math.max(0, Math.min(1, reste / total));
-      barre.style.width = (part * 100) + "%";
-      barre.className = part < 0.25 ? "presse" : "";
-      barre.setAttribute("aria-valuenow", Math.round(part * 100));
-      if (rail) rail.title = Math.ceil(reste / 1000) + " s";
-      if (reste <= 0 && horloge) { clearInterval(horloge); horloge = null; }
-    };
-    peindre();
-    horloge = setInterval(peindre, 200);
+  /* La phase selon l'horaire local. */
+  function phaseLocale(t){
+    if (!H) return "";
+    return t < H.tQDebut ? "depart" : t < H.tQFin ? "question"
+         : t < H.tRevFin ? "revelation" : "attente";
   }
 
-  function peindreTableau(m){
-    Promise.resolve(atlas.partie.classement()).then(function(r){
-      if (!r || !r.ok) return;
-      var ol = el("tableau-liste");
-      ol.innerHTML = (r.table || []).slice(0, 8).map(function(j){
-        var nom = j.pseudo ? String(j.pseudo).replace(/[<>&]/g, "") : "…";
-        return '<li class="' + (j.moi ? "moi" : "") + '">' + nom +
-               ' <span style="color:#6b7480">' + j.points + "</span></li>";
-      }).join("") || "<li>personne n'a encore répondu</li>";
-      var g = el("tableau-gel");
-      /* ⚠️ On ne parle de l'attente qu'a celui qui a DEJA repondu : l'annoncer
-         avant, c'est annoncer une attente qui n'a pas commence. */
-      g.hidden = !(m && m.gele && m.jaiRepondu);
-      g.textContent = "Figé jusqu'à ce que tout le monde ait répondu.";
-    }).catch(function(){});
+  /* Dix fois par seconde : le chrono, la barre, le compte a rebours, et le
+     passage a la revelation des que le chrono tombe — sans attendre le
+     sondage, qui n'arrive qu'une fraction de seconde plus tard. */
+  function tic(){
+    if (!H) return;
+    var t = Date.now();
+    var ph = phaseLocale(t);
+    var dep = el("depart");
+    if (ph === "depart") {
+      dep.hidden = false;
+      el("depart-n").textContent = Math.max(1, Math.ceil((H.tQDebut - t) / 1000));
+    } else if (!dep.hidden) {
+      dep.hidden = true;
+    }
+    if ((ph === "revelation" || ph === "attente") && REVELE_IDX !== H.index) {
+      revelerManche();
+    }
+    if (ph !== phaseVue) { phaseVue = ph; peindrePied(); }
+    peindreHud(ph, t);
+    var cpt = el("suite-compte");
+    if (cpt) cpt.textContent = Math.max(0, Math.ceil((H.tRevFin - t) / 1000));
+  }
+
+  function pointsA(ms){
+    var f = Math.max(1, H ? H.fenetre : 10000);
+    var x = Math.min(Math.max(0, ms), f) / f;
+    return Math.round(POINTS_MAX - (POINTS_MAX - POINTS_MIN) * x);
+  }
+
+  function peindreHud(ph, t){
+    var hud = el("hud"), sec = el("hud-sec"), unite = el("hud-unite");
+    var barre = el("hud-points"), txt = el("hud-points-txt");
+    el("hud-repondu").textContent = milliers(H.repondu);
+    el("hud-joueurs").textContent = milliers(H.joueurs);
+    var classe, largeur, texte;
+    if (ph === "depart") {
+      sec.textContent = Math.max(1, Math.ceil((H.tQDebut - t) / 1000));
+      unite.textContent = "s";
+      classe = "depart"; largeur = 100; texte = POINTS_MAX + " pts";
+    } else if (ph === "question") {
+      var reste = H.tQFin - t;
+      sec.textContent = Math.ceil(reste / 1000);
+      unite.textContent = "s";
+      if (CHOIX) {
+        var p = CHOIX.points != null ? CHOIX.points : pointsA(t - H.tQDebut);
+        classe = "fige"; largeur = p / 10;
+        texte = milliers(p) + " pts si c'est juste";
+      } else {
+        var pts = pointsA(t - H.tQDebut);
+        classe = reste / H.fenetre < 0.25 ? "presse" : "";
+        largeur = pts / 10; texte = milliers(pts) + " pts";
+      }
+    } else {
+      sec.textContent = Math.max(0, Math.ceil((H.tRevFin - t) / 1000));
+      unite.textContent = "s";
+      if (!CHOIX || CHOIX.refuse) {
+        classe = "revelation rien"; largeur = 0; texte = "Pas de réponse";
+      } else if (CHOIX.juste === true) {
+        var gain = CHOIX.points != null ? CHOIX.points : 0;
+        classe = "revelation gagne"; largeur = gain / 10; texte = "+" + milliers(gain) + " pts";
+      } else if (CHOIX.juste === false) {
+        classe = "revelation perdu"; largeur = 0; texte = "0 pt — raté";
+      } else {
+        classe = "revelation rien"; largeur = 0; texte = "…";
+      }
+    }
+    if (hud.className !== classe) hud.className = classe;
+    barre.style.width = largeur + "%";
+    if (txt.textContent !== texte) txt.textContent = texte;
+    el("hud-rail").setAttribute("aria-valuenow", Math.round(largeur * 10));
+  }
+
+  /* La fin du chrono : le verdict, pour tout le monde en meme temps. */
+  function revelerManche(){
+    if (!H || REVELE_IDX === H.index) return;
+    var d = liste()[pos - PREMIER];
+    if (!d || itemDe(d) !== H.item) return;
+    REVELE_IDX = H.index;
+    if (CHOIX && CHOIX.item === H.item && !CHOIX.refuse) {
+      var juste = noterReponse(d, CHOIX.bouton);
+      if (CHOIX.juste == null) CHOIX.juste = juste;
+      /* ⚠️ Le temps RENDU PAR LE SERVEUR, jamais une mesure locale : une
+         horloge de navigateur se regle, et un succes de rapidite fonde dessus
+         se decroche en changeant l'heure de sa machine. */
+      if (CHOIX.juste && CHOIX.confirme && typeof CHOIX.ms === "number" && CHOIX.ms < 2000) {
+        debloquer("multi-eclair");
+      }
+    }
+    revele = true;
+    rendre();
+  }
+
+  /* Le joueur choisit. La reponse part, rien d'autre ne bouge. */
+  function choisirEnPartie(bouton){
+    if (!H || CHOIX) return;
+    var t = Date.now();
+    if (phaseLocale(t) !== "question") return;
+    var d = liste()[pos - PREMIER];
+    if (!d || itemDe(d) !== H.item) return;
+    var mien = { item: H.item, bouton: bouton, points: null, ms: null, confirme: false };
+    CHOIX = mien;
+    try {
+      Promise.resolve(atlas.partie.juger(itemDe(d), reponseDe(bouton))).then(function(r){
+        if (CHOIX !== mien) return;
+        if (r && r.ok) {
+          mien.confirme = true;
+          /* Ma reponse compte tout de suite dans « ont repondu » : sinon le
+             compteur restait a zero jusqu'au sondage suivant, juste apres
+             qu'on a clique — ce qui se lit comme une reponse perdue. */
+          if (H && H.item === mien.item) H.repondu++;
+          if (typeof r.points === "number") mien.points = r.points;
+          if (typeof r.ms === "number") mien.ms = r.ms;
+        } else if (r && r.deja) {
+          mien.confirme = true;
+        } else if (r && r.tard) {
+          mien.refuse = "tard";
+        } else {
+          /* Le serveur n'a pas pris la reponse : on rend la main pour qu'on
+             puisse recliquer. Si elle etait passee malgre tout, le second envoi
+             rendra `deja` et tout rentrera dans l'ordre. */
+          CHOIX = null;
+          mien.refuse = "erreur";
+        }
+        peindrePied();
+      }).catch(function(){ if (CHOIX === mien) { CHOIX = null; peindrePied(); } });
+    } catch (e) { CHOIX = null; }
+    peindrePied();
+    tic();
+  }
+
+  function nomReponse(bouton){
+    if (mode === "duels") return bouton === 1 ? "A" : "B";
+    return bouton === 1 ? "générée par IA" : "vraie photo";
+  }
+
+  /* Le pied, la scene et les boutons pendant une partie. Appele a chaque
+     changement de phase et a chaque evenement de reponse — pas a chaque tic. */
+  function peindrePied(){
+    if (!synchro || pos < PREMIER || pos > dernier()) return;
+    var d = liste()[pos - PREMIER];
+    if (!d) return;
+    var duel = (mode === "duels");
+    var t = Date.now();
+    var ph = phaseLocale(t);
+    var ouvert = ph === "question" && !CHOIX;
+    el("rep-1").disabled = el("rep-2").disabled = !ouvert;
+    var b = CHOIX && CHOIX.item === (H && H.item) ? CHOIX.bouton : 0;
+    el("rep-1").className = "rep" + (b === 1 ? " choisi" : "");
+    el("rep-2").className = "rep" + (b === 2 ? " choisi" : "");
+    el("pied").className = (duel ? "duel" : "solo") + (revele ? " revele" : "") +
+                           (b && !revele ? " revele choisi" : "");
+    el("scene").className = (duel ? "" : "solo") + (duel && ouvert ? " repondable" : "");
+    if (duel && !revele) {
+      el("cote-a").className = "cote" + (b === 1 ? " choisi" : "");
+      el("cote-b").className = "cote" + (b === 2 ? " choisi" : "");
+    }
+
+    var v = el("verdict"), suite = el("suite");
+    if (!revele) {
+      if (CHOIX && CHOIX.refuse === "tard") {
+        v.className = "faux";
+        v.innerHTML = "Trop tard." + '<span class="det">le chrono était écoulé</span>';
+        suite.innerHTML = "";
+      } else if (b) {
+        v.className = "";
+        v.innerHTML = '<span style="color:var(--ia)">Réponse enregistrée&nbsp;: ' +
+          nomReponse(b) + "</span>" + '<span class="det">verdict à la fin du chrono</span>';
+        suite.innerHTML = "";
+      } else if (ph === "question") {
+        v.className = ""; v.innerHTML = "";
+        suite.innerHTML = '<span class="touche-seule">Une seule réponse — ' +
+          "le verdict tombe à la fin du chrono.</span>";
+      } else {
+        v.className = "";
+        v.innerHTML = '<span style="color:var(--doux)">Temps écoulé…</span>';
+        suite.innerHTML = "";
+      }
+      return;
+    }
+
+    var attendu = bonBouton(d);
+    var nomBon = duel ? (attendu === 1 ? "A" : "B")
+                      : (attendu === 1 ? "l'IA" : "une vraie photo");
+    if (!CHOIX || CHOIX.refuse) {
+      v.className = "";
+      v.innerHTML = '<span style="color:var(--doux)">Temps écoulé —</span> ' +
+                    "c'était " + nomBon + ".";
+    } else if (CHOIX.juste) {
+      v.className = "bon";
+      v.innerHTML = "Bien vu&nbsp;! +" + milliers(CHOIX.points || 0) + " points" +
+                    '<span class="det">c\'était ' + nomBon + "</span>";
+    } else {
+      v.className = "faux";
+      v.innerHTML = "Raté." + '<span class="det">c\'était ' + nomBon + " · 0 point</span>";
+    }
+    var derniere = H && H.index + 1 >= H.total;
+    suite.innerHTML = (derniere ? "Classement final dans " : "Image suivante dans ") +
+      '<b id="suite-compte">' + (H ? Math.max(0, Math.ceil((H.tRevFin - t) / 1000)) : "") +
+      "</b>&nbsp;s";
+  }
+
+  /* Le classement pendant la partie : la tete, et ma ligne si je n'y suis pas.
+     Il arrive avec la revelation — jamais de requete a part. */
+  function peindreTableau(){
+    var c = CLASSEMENT;
+    if (!c) return;
+    var top = c.top || [];
+    var ligne = function(j){
+      return '<li class="' + (j.moi ? "moi" : "") + '"><span class="r">' + j.rang +
+             "</span>" + (j.pseudo ? sansBalises(j.pseudo) : "Joueur " + j.rang) +
+             '<span class="pts">' + milliers(j.points) + "</span></li>";
+    };
+    var html = top.map(ligne).join("");
+    if (c.moi && c.moi.rang > top.length) {
+      html += ligne(c.moi).replace('class="moi"', 'class="moi sep"');
+    }
+    el("tableau-liste").innerHTML = html || "<li>personne n'a encore marqué</li>";
+    var n = c.classes || 0;
+    el("tableau-titre").textContent = "Classement · " + milliers(n) + " joueur" + (n > 1 ? "s" : "");
   }
 
   /* Surface de controle exposee volontairement : elle sert au banc d'essai qui
